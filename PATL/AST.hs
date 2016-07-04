@@ -21,7 +21,8 @@ data Shape a = Z
 
 type Extents = Shape Size
 
-data I = IIndex Exp -- Maybe IRange Exp Exp
+data I = IIndex Exp
+       | IRange Exp Exp 
        | IAll 
          deriving (Eq,Show)
 
@@ -53,8 +54,8 @@ data Exp = Constant Value
          | Prj Exp Index
 
            -- SKETCHING
-         | Block Blocking Exp
-         | UnBlock Exp
+         | Block Blocking Exp -- Can be implemented by Generate + Prj (IRange) 
+         | UnBlock Exp        -- Need some concat-like functionality
 
            -- Size of Exp (array or scalar) 
          | SizeOf Exp
