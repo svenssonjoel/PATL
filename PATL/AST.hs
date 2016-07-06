@@ -21,6 +21,7 @@ data Shape a = Z
 
 type Extents = Shape Size
 
+
 data I = IIndex Exp
        | IRange Exp Exp 
        | IAll 
@@ -104,7 +105,8 @@ myPrg = Map myFun myArray
                  
 
 ------------------------------------------------------------
--- Blocked Matrix Mult sketch (for square matrices) 
+-- Blocked Matrix Mult sketch (for square matrices)
+-- Cheating here and there 
 
 blocked_mmult m1 m2 =
   Let "tp" (TuneParam TPInt) $
@@ -172,7 +174,7 @@ myReduce = Lam "arr"
            $ Let "add" (Lam "x"
                         $ Lam "y"
                         $ Op Add [Var "x", Var "y"])
-           $ Reduce (Var "add") (Var "arr") 
+           $ Reduce (Var "add") (Var "arr")
 
 
 -- 2 level reduce that can make better use of cache or local memory 
@@ -184,3 +186,4 @@ myReduce2 = Lam "arr"
             $ Reduce (Var "add")
                 (Map (Lam "chunk" (Reduce (Var "add") (Var "chunk")))
                   (Block (Chunk (Var "chunk_size"))  (Var "arr")))
+            
