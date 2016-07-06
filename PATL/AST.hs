@@ -187,3 +187,12 @@ myReduce2 = Lam "arr"
                 (Map (Lam "chunk" (Reduce (Var "add") (Var "chunk")))
                   (Block (Chunk (Var "chunk_size"))  (Var "arr")))
             
+
+
+------------------------------------------------------------
+-- Fusion and Compilation sketches
+
+
+
+
+
