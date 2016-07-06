@@ -108,10 +108,13 @@ myPrg = Map myFun myArray
 -- Blocked Matrix Mult sketch (for square matrices)
 -- Cheating here and there 
 
-blocked_mmult m1 m2 =
+blocked_mmult =
+  Lam "m1" $
+  Lam "m2" $ 
+                      
   Let "tp" (TuneParam TPInt) $
-  Let "blocked_m1" (Block (Square (Var "tp")) m1) $
-  Let "blocked_m2" (Block (Square (Var "tp")) m2) $
+  Let "blocked_m1" (Block (Square (Var "tp")) (Var "m1")) $
+  Let "blocked_m2" (Block (Square (Var "tp")) (Var "m2")) $
   Let "block_rows_m1" (ZipWith extract_row (Var "blocked_m1") (Iota (Z:.(Var "bs")))) $
   Let "block_cols_m2" (ZipWith extract_col (Var "blocked_m2") (Iota (Z:.(Var "bs")))) $
   Let "bs" (SizeOf (Var "blocked_m1")) $ -- assuming square
@@ -164,7 +167,7 @@ apply e (x:xs) = apply (App e x) xs
 
 mmult_example =
   let c = Constant (VInt 128) 
-  in blocked_mmult (Iota (Z:.c:.c)) (Iota (Z:.c:.c))
+  in App (App blocked_mmult (Iota (Z:.c:.c))) (Iota (Z:.c:.c))
 
 
 ------------------------------------------------------------

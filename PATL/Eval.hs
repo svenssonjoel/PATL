@@ -63,8 +63,6 @@ eval e = evalState (doEval e) emptyEnv
 
       Op op es -> evalOp op es 
 
-
-
       -- Let bindings. Extends the environment
       Let ident e1 e2 ->
         do ee1 <- doEval e1
