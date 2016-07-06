@@ -65,7 +65,12 @@ data Exp = Constant Value
          | Map Exp Exp
          | ZipWith Exp Exp Exp
          | Reduce Exp Exp         -- Many kinds of Reduce will exist
-         | Transpose Exp          -- This list will grow 
+         | Transpose Exp          -- This list will grow
+           -- | Permute ?
+           -- | Scatter
+           -- | Gather
+           -- | Scan 
+           
            deriving (Eq, Show)
            
 
@@ -78,8 +83,11 @@ data TP = TPInt
         | TPBool
           deriving (Eq, Show)
 
+-- Need to change the way to express blocking (maybe using projections
+-- and Generates) 
 data Blocking = Square Exp
               | Rectangular Exp Exp
+              | Chunk Exp 
                 deriving (Eq, Show)
 
 
@@ -146,6 +154,8 @@ extract_col = Lam "arr"
               $ Prj (Var "arr") (Z:.(IIndex (Var "y")):.IAll)
 
 
+
+
 apply :: Exp -> [Exp] -> Exp
 apply e [] = e
 apply e (x:xs) = apply (App e x) xs
@@ -155,6 +165,22 @@ mmult_example =
   in blocked_mmult (Iota (Z:.c:.c)) (Iota (Z:.c:.c))
 
 
+------------------------------------------------------------
+-- Reduction can be expressed in many ways.
+
+myReduce = Lam "arr"
+           $ Let "add" (Lam "x"
+                        $ Lam "y"
+                        $ Op Add [Var "x", Var "y"])
+           $ Reduce (Var "add") (Var "arr") 
 
 
-     
+-- 2 level reduce that can make better use of cache or local memory 
+myReduce2 = Lam "arr"
+            $ Let "add" (Lam "x"
+                         $ Lam "y"
+                         $ Op Add [Var "x", Var "y"])
+            $ Let "chunk_size" (TuneParam TPInt) 
+            $ Reduce (Var "add")
+                (Map (Lam "chunk" (Reduce (Var "add") (Var "chunk")))
+                  (Block (Chunk (Var "chunk_size"))  (Var "arr")))
