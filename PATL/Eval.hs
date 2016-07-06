@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module PATL.Eval where
 
@@ -110,7 +111,27 @@ eval e = evalState (doEval e) emptyEnv
     
     
 
-    evalOp :: Op -> [Exp] -> E EvalResult 
-    evalOp = undefined 
+    evalOp :: Op -> [Exp] -> E EvalResult
+    evalOp op1 [e1]    = undefined 
+    evalOp op2 [e1,e2] =
+      do e1' <- doEval e1
+         e2' <- doEval e2
+         case (e1',e2') of
+           (Scalar (VInt i1), Scalar (VInt i2)) ->
+             case op2 of
+             Add -> return $ Scalar (VInt (i1 + i2))
+             Sub -> return $ Scalar (VInt (i1 - i2))
+             Mul -> return $ Scalar (VInt (i1 * i2))
+             Div -> return $ Scalar (VInt (i1 `div` i2))
+
+           (Scalar (VFloat f1), Scalar (VFloat f2)) ->
+             case op2 of
+             Add -> return $ Scalar (VFloat (f1 + f2))
+             Sub -> return $ Scalar (VFloat (f1 - f2))
+             Mul -> return $ Scalar (VFloat (f1 * f2))
+             Div -> return $ Scalar (VFloat (f1 / f2))
+
+   
+    
       
 
