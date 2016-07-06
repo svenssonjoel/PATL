@@ -59,7 +59,7 @@ eval e = evalState (doEval e) emptyEnv
            ee   <- doEval e
            case efun of
              Function f -> f ee
-             _          -> error "First argument of App is not a function"
+             _          -> appNotAFun
 
       Op op es -> evalOp op es 
 
@@ -91,7 +91,9 @@ eval e = evalState (doEval e) emptyEnv
       ZipWith fun e1 e2 -> undefined
       Reduce fun e -> undefined
       Transpose e -> undefined 
-        
+
+    appNotAFun = error "First argument of App is not a function"
+
     evalIota :: Extents -> E EvalResult
     evalIota e =
       do shape <- evalExtents e
