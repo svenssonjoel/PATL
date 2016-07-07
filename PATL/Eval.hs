@@ -107,9 +107,6 @@ eval e = evalState (doEval e) emptyEnv
       Generate exts e -> undefined
 
 
-
-      -- This is not what Map should do.
-      -- TODO: Figure this out ! 
       Map fun e ->
         do e' <- doEval e
            fun' <- doEval fun 
@@ -145,7 +142,13 @@ eval e = evalState (doEval e) emptyEnv
       -- what reduction to perform here ???
       -- Reduce should be augmented with a description of
       -- what dimension to reduce.
-      -- Currently reduce over outermost dimension (reduce_rows) 
+      -- Currently reduce over outermost dimension (reduce_rows)
+
+      -- Reduction could actually be down to a scalar in ALL cases !
+      -- It is then up to the programmer to "block" up the data into
+      -- chunks before (map reduce) on the blocked structure, if some
+      -- other reduction is desired. 
+      
       Reduce fun e_id e ->
         do e'    <- doEval e
            e_id' <- doEval e_id 
