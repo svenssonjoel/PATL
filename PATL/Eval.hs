@@ -14,10 +14,13 @@ import Control.Monad.State
 ------------------------------------------------------------
 -- Evaluation
 
+
+-- Clean this up later
 data EvalResult = Scalar Value
-                | Array  (Shape EvalResult) (V.Vector Value)
+                | Array  (Shape EvalResult) (V.Vector (EvalResult))
+                | Shap   (Shape EvalResult)  -- Better constr names! (maybe prefix Eval_)
                 | Tuning TP
-                | Function (EvalResult -> E EvalResult)
+                | Function (EvalResult -> EvalResult)
 
 
 type Env = M.Map Identifier EvalResult --what about functions ?
@@ -41,24 +44,37 @@ eval e = evalState (doEval e) emptyEnv
              Nothing -> error "Environment malfunction"
              Just v  -> return v
 
+
+      -- ------------------------------
+      -- Evaluate tuning parameter...
+      -- This should return an integer constant.
+      -- Or it should create a new variable and add
+      -- to some list of such variables for later binding to
+      -- constant values. 
+
       TuneParam t -> return $ Tuning t
 
       -- Evaluate Lam to haskell functions 
       Lam ident e ->
-        return $ Function $ \fr ->
-        do env <- get
-           let env2 = M.insert ident fr env
-           put env2 
-           res <- doEval e
-           put env -- reset the environment
-           return res                
+        do env <- get -- capture environment here 
+           
+           return $ Function
+                  $ \fr -> evalState ( 
+             do env <- get
+                let env2 = M.insert ident fr env
+                put env2 
+                res <- doEval e
+                put env -- reset the environment
+                return res
+             ) env
+             -- changes to env within function does not leak out 
                           
       -- evaluate App to Haskell function application 
       App fun e ->
         do efun <- doEval fun
            ee   <- doEval e
            case efun of
-             Function f -> f ee
+             Function f -> return $ f ee
              _          -> appNotAFun
 
       Op op es -> evalOp op es 
@@ -80,15 +96,69 @@ eval e = evalState (doEval e) emptyEnv
       UnBlock e -> undefined 
 
       -- SizeOf can return either a scalar or a shape. 
-      SizeOf e -> undefined  
+      SizeOf e ->
+        do e' <- doEval e
+           case e' of
+             Scalar _ -> return $ Scalar (VInt 1)
+             Array sh _ -> return $ Shap sh 
 
 
       -- PATTERNS
       Generate exts e -> undefined
-      Map fun e -> undefined
-      ZipWith fun e1 e2 -> undefined
-      Reduce fun e -> undefined
-      Transpose e -> undefined 
+
+      
+      Map fun e ->
+        do e' <- doEval e
+           fun' <- doEval fun 
+           case e' of
+             Array sh v ->
+               case fun' of
+                 Function f -> return $ Array sh (V.map f v)
+                 _ -> error "Argument to Map is not a function"
+             _ -> error "Argument to Map is not an Array"
+             -- The errors here are of the kind that type checking will catch 
+
+
+      -- ZipWith needs to do some extents checking.
+      -- TODO: check extents
+      -- TODO: decide what combinations of shapes are allowed in a zipwith
+      -- Currently requires that both inputs have exact same shape and extents 
+      ZipWith fun e1 e2 ->
+        do e1' <- doEval e1
+           e2' <- doEval e2
+           fun' <- doEval fun
+           case (e1',e2') of
+             (Array sh1 v1, Array sh2 v2) ->
+               case fun' of
+                 Function f ->
+                   return $ Array sh1
+                   (V.zipWith
+                    (\x y -> let Function f' = f x in f' y) v1 v2) 
+                 _ -> error "Argument to ZipWith is not a function"
+             _ -> error "Argument to ZipWith is not an Array" 
+                         
+
+
+      -- what reduction to perform here ???
+      -- Reduce should be augmented with a description of
+      -- what dimension to reduce.
+      -- Currently reduce over outermost dimension (reduce_rows) 
+      Reduce fun e_id e ->
+        do e'    <- doEval e
+           e_id' <- doEval e_id 
+           Function f <- doEval fun
+           case e' of
+             (Array sh v) ->
+               case sh of
+                 Z ->  return $ Array sh v
+                 (Z:._) -> return $ Array Z (V.singleton $ V.foldr
+                                              (\x y -> let Function f' = f x in f y) e_id' v)
+                 _ -> error "NOT SUPPORTED"
+             _ -> error "Argument to reduce is not an Array" 
+    
+                                                 
+           
+
 
     appNotAFun = error "First argument of App is not a function"
 
@@ -96,7 +166,7 @@ eval e = evalState (doEval e) emptyEnv
     evalIota e =
       do shape <- evalExtents e
          let  size  = sizeExtents shape
-         return $ Array shape (V.generate  size (\i -> (VInt i)))
+         return $ Array shape (V.generate  size (\i -> (Scalar (VInt i))))
         
     evalExtents Z = return Z 
     evalExtents (sh:.e) =
@@ -119,17 +189,17 @@ eval e = evalState (doEval e) emptyEnv
          case (e1',e2') of
            (Scalar (VInt i1), Scalar (VInt i2)) ->
              case op2 of
-             Add -> return $ Scalar (VInt (i1 + i2))
-             Sub -> return $ Scalar (VInt (i1 - i2))
-             Mul -> return $ Scalar (VInt (i1 * i2))
-             Div -> return $ Scalar (VInt (i1 `div` i2))
+               Add -> return $ Scalar (VInt (i1 + i2))
+               Sub -> return $ Scalar (VInt (i1 - i2))
+               Mul -> return $ Scalar (VInt (i1 * i2))
+               Div -> return $ Scalar (VInt (i1 `div` i2))
 
            (Scalar (VFloat f1), Scalar (VFloat f2)) ->
              case op2 of
-             Add -> return $ Scalar (VFloat (f1 + f2))
-             Sub -> return $ Scalar (VFloat (f1 - f2))
-             Mul -> return $ Scalar (VFloat (f1 * f2))
-             Div -> return $ Scalar (VFloat (f1 / f2))
+               Add -> return $ Scalar (VFloat (f1 + f2))
+               Sub -> return $ Scalar (VFloat (f1 - f2))
+               Mul -> return $ Scalar (VFloat (f1 * f2))
+               Div -> return $ Scalar (VFloat (f1 / f2))
 
    
     

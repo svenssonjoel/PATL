@@ -65,8 +65,7 @@ data Exp = Constant Value
          | Generate Extents Exp
          | Map Exp Exp
          | ZipWith Exp Exp Exp
-         | Reduce Exp Exp         -- Many kinds of Reduce will exist
-         | Transpose Exp          -- This list will grow
+         | Reduce Exp Exp Exp         -- Many kinds of Reduce will exist
            -- | Permute ?
            -- | Scatter
            -- | Gather
@@ -122,14 +121,14 @@ blocked_mmult =
                    $ Lam "m2" 
                    $ Lam "row"
                    $ Lam "col"
-                   $ Reduce (Var "add") (ZipWith (Var "mmult")
+                   $ Reduce (Var "add") (Constant (VInt 0)) (ZipWith (Var "mmult")
                                          (apply extract_row [Var "row", Var "m1"])
                                          (apply extract_col [Var "col", Var "m2"]))) $
   Let "gen_func" (Lam "m1"
                   $ Lam "m2"
                   $ Lam "i"
                   $ Lam "j"
-                  $ Reduce (Var "add")
+                  $ Reduce (Var "add") (Constant (VInt 0)) 
                      (ZipWith (Var "multiply")
                       (apply extract_row [Var "i", Var "m1"])
                       (apply extract_col [Var "j", Var "m2"]))) $
@@ -177,7 +176,7 @@ myReduce = Lam "arr"
            $ Let "add" (Lam "x"
                         $ Lam "y"
                         $ Op Add [Var "x", Var "y"])
-           $ Reduce (Var "add") (Var "arr")
+           $ Reduce (Var "add") (Constant (VInt 0)) (Var "arr")
 
 
 -- 2 level reduce that can make better use of cache or local memory 
@@ -186,8 +185,8 @@ myReduce2 = Lam "arr"
                          $ Lam "y"
                          $ Op Add [Var "x", Var "y"])
             $ Let "chunk_size" (TuneParam TPInt) 
-            $ Reduce (Var "add")
-                (Map (Lam "chunk" (Reduce (Var "add") (Var "chunk")))
+            $ Reduce (Var "add") (Constant (VInt 0))
+                (Map (Lam "chunk" (Reduce (Var "add") (Constant (VInt 0))(Var "chunk")))
                   (Block (Chunk (Var "chunk_size"))  (Var "arr")))
             
 
