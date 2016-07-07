@@ -106,7 +106,10 @@ eval e = evalState (doEval e) emptyEnv
       -- PATTERNS
       Generate exts e -> undefined
 
-      
+
+
+      -- This is not what Map should do.
+      -- TODO: Figure this out ! 
       Map fun e ->
         do e' <- doEval e
            fun' <- doEval fun 

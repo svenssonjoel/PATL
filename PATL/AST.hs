@@ -35,36 +35,58 @@ type Index = Shape I
 
 type Identifier = String
 
-data Exp = Constant Value
+data Exp =
+
+           --  :: Int , Float  for example 
+           Constant Value
+           -- :: Int, Float, Array sh a, (a -> b) ... 
          | Var Identifier
+           -- :: Tune Int, Tune Bool 
          | TuneParam TP  -- tuning parameters
 
+           -- :: a -> b, a -> b -> c ... 
          | Op Op [Exp]
 
            -- Functions
+           -- :: a -> b 
          | Lam Identifier Exp
+           -- :: (a -> b) -> a -> b 
          | App Exp Exp
 
            -- Let bindings
+           -- :: a 
          | Let Identifier Exp Exp
 
            -- Create an array (todo more ways)
+           -- :: Extents -> Array sh Int 
          | Iota Extents  -- what does this mean for multidim arrays ?
 
            -- Project from N-dimensional arrays
+           -- :: Array sh a -> Index -> Array sh' a
+           -- :: Array sh a -> Index -> a 
          | Prj Exp Index
 
            -- SKETCHING
-         | Block Blocking Exp -- Can be implemented by Generate + Prj (IRange) 
+
+           -- :: Blocking -> Array sh a -> Array sh (Array sh' a) 
+         | Block Blocking Exp -- Can be implemented by Generate + Prj (IRange)
+           -- :: Array sh (Array sh' a) -> Array sh'' a 
          | UnBlock Exp        -- Need some concat-like functionality
 
-           -- Size of Exp (array or scalar) 
+           -- Size of Exp (array or scalar)
+           -- :: Array sh a -> sh
+           -- :: Int, Float -> Int
+           -- ... 
          | SizeOf Exp
 
            -- Patterns
+           -- :: Extents -> (Index -> a) -> Array sh a 
          | Generate Extents Exp
+           -- :: (a -> b) -> Array sh a -> Array sh b 
          | Map Exp Exp
+           -- :: (a -> b -> c) -> Array sh a -> Array sh b -> Array sh c
          | ZipWith Exp Exp Exp
+           -- This is a tricky one! 
          | Reduce Exp Exp Exp         -- Many kinds of Reduce will exist
            -- | Permute ?
            -- | Scatter
