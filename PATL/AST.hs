@@ -99,12 +99,15 @@ data Exp = -- Annotated with what "top-level" (in whatever language we present t
            -- ZipWith :: (a -> b -> c) -> Array sh a -> Array sh b -> Array sh c
          | ZipWith Exp Exp Exp
            
-           -- This is a tricky one!
+           -- Reduction is a tricky one!
            -- Reduce :: (a -> b -> b) -> b -> Array (sh:.i) a -> Array sh b
            -- Reduce :: (a -> b -> b) -> b -> Array (sh:.x:.rest) a -> Array (sh:.rest) b ??? 
            -- Reduce :: (a -> b -> b) -> b -> Array sh a -> b
-           -- How to specify what reduction to use ?? 
-         | Reduce Exp Exp Exp         -- Many kinds of Reduce will exist
+           -- How to specify what reduction to use ??
+
+           -- I think now that there will be only one Reduce!
+           -- Reduce :: (a -> b -> b) -> b -> Array sh a -> a 
+         | Reduce Exp Exp Exp        
            -- | Permute ?
            -- | Scatter
            -- | Gather
