@@ -35,7 +35,9 @@ type Index = Shape I
 
 type Identifier = String
 
-data Exp =
+data Exp = -- Annotated with what "top-level" (in whatever language we present to user)
+           -- types these would have
+           
 
            --  :: Int , Float  for example 
            Constant Value
@@ -48,45 +50,60 @@ data Exp =
          | Op Op [Exp]
 
            -- Functions
-           -- :: a -> b 
+           -- Lam :: a -> b 
          | Lam Identifier Exp
-           -- :: (a -> b) -> a -> b 
+           
+           -- App :: (a -> b) -> a -> b 
          | App Exp Exp
 
            -- Let bindings
-           -- :: a 
+           -- Let :: b 
          | Let Identifier Exp Exp
 
+
            -- Create an array (todo more ways)
-           -- :: Extents -> Array sh Int 
+           -- Iota :: Extents -> Array sh Int 
          | Iota Extents  -- what does this mean for multidim arrays ?
 
+
            -- Project from N-dimensional arrays
-           -- :: Array sh a -> Index -> Array sh' a
-           -- :: Array sh a -> Index -> a 
+           -- Prj :: Array sh a -> Index -> Array sh' a
+           -- Prj :: Array sh a -> Index -> a 
          | Prj Exp Index
 
            -- SKETCHING
 
-           -- :: Blocking -> Array sh a -> Array sh (Array sh' a) 
+           -- Block :: Blocking -> Array sh a -> Array sh (Array sh' a) 
          | Block Blocking Exp -- Can be implemented by Generate + Prj (IRange)
-           -- :: Array sh (Array sh' a) -> Array sh'' a 
+
+           -- UnBlock :: Array sh (Array sh' a) -> Array sh'' a 
          | UnBlock Exp        -- Need some concat-like functionality
 
+
            -- Size of Exp (array or scalar)
-           -- :: Array sh a -> sh
-           -- :: Int, Float -> Int
+           -- SizeOf :: Array sh a -> sh
+           -- SizeOf :: Int, Float -> Int
            -- ... 
          | SizeOf Exp
 
+           -------------------------------------------------------
            -- Patterns
-           -- :: Extents -> (Index -> a) -> Array sh a 
+           ------------------------------------------------------- 
+           
+           -- Generate :: Extents -> (Index -> a) -> Array sh a 
          | Generate Extents Exp
-           -- :: (a -> b) -> Array sh a -> Array sh b 
+           
+           -- Map :: (a -> b) -> Array sh a -> Array sh b 
          | Map Exp Exp
-           -- :: (a -> b -> c) -> Array sh a -> Array sh b -> Array sh c
+           
+           -- ZipWith :: (a -> b -> c) -> Array sh a -> Array sh b -> Array sh c
          | ZipWith Exp Exp Exp
-           -- This is a tricky one! 
+           
+           -- This is a tricky one!
+           -- Reduce :: (a -> b -> b) -> b -> Array (sh:.i) a -> Array sh b
+           -- Reduce :: (a -> b -> b) -> b -> Array (sh:.x:.rest) a -> Array (sh:.rest) b ??? 
+           -- Reduce :: (a -> b -> b) -> b -> Array sh a -> b
+           -- How to specify what reduction to use ?? 
          | Reduce Exp Exp Exp         -- Many kinds of Reduce will exist
            -- | Permute ?
            -- | Scatter
