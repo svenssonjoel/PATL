@@ -35,10 +35,9 @@ type Index = Shape I
 
 type Identifier = String
 
-data Exp = -- Annotated with what "top-level" (in whatever language we present to user)
-           -- types these would have
-           
-
+data Exp = -- Annotated with what "top-level" types these would have
+           -- (in whatever language we present to user)
+          
            --  :: Int , Float  for example 
            Constant Value
            -- :: Int, Float, Array sh a, (a -> b) ... 
@@ -68,7 +67,8 @@ data Exp = -- Annotated with what "top-level" (in whatever language we present t
 
            -- Project from N-dimensional arrays
            -- Prj :: Array sh a -> Index -> Array sh' a
-           -- Prj :: Array sh a -> Index -> a 
+           -- Prj :: Array sh a -> Index -> a
+           -- Maybe also Prj :: sh -> Index -> Exp 
          | Prj Exp Index
 
            -- SKETCHING
@@ -230,7 +230,6 @@ myReduce2 = Lam "arr"
             $ Reduce (Var "add") (Constant (VInt 0))
                 (Map (Lam "chunk" (Reduce (Var "add") (Constant (VInt 0))(Var "chunk")))
                   (Block (Chunk (Var "chunk_size"))  (Var "arr")))
-            
 
 
 ------------------------------------------------------------
