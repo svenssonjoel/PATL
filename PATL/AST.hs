@@ -5,6 +5,7 @@
 
 module PATL.AST where
 
+import PATL.Shape
 
 data Value = VFloat Float
            | VInt   Int
@@ -13,23 +14,9 @@ data Value = VFloat Float
 type Size = Exp 
 
 
-{- Shapes, extents and indexing -} 
-
-data Shape a = Z
-             | (Shape a) :. a
-             deriving (Eq,Show)
+{- extents -} 
 
 type Extents = Shape Size
-
-
-data I = IIndex Exp
-       | IRange Exp Exp 
-       | IAll 
-         deriving (Eq,Show)
-
-
-type Index = Shape I 
-
 
 {- The Language -} 
 
@@ -69,7 +56,7 @@ data Exp = -- Annotated with what "top-level" types these would have
            -- Prj :: Array sh a -> Index -> Array sh' a
            -- Prj :: Array sh a -> Index -> a
            -- Maybe also Prj :: sh -> Index -> Exp 
-         | Prj Exp Index
+         | Prj Exp (Index Exp) 
 
            -- SKETCHING
 

@@ -4,6 +4,7 @@ module PATL.Eval where
 
 
 import PATL.AST
+import PATL.Shape
 
 import qualified Data.Vector as V 
 import qualified Data.Map as M
