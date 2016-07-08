@@ -13,7 +13,7 @@ data Array sh a
 data Exp a where
   Generate :: Shape (Exp Int)
            -> (Index (Exp Int) -> Exp a)
-           -> Exp (Array (Shape (Exp Int) a)
+           -> Exp (Array (Shape (Exp Int)) a)
                    
 
 
@@ -26,7 +26,7 @@ data Exp a where
 
 generate :: Shape (Exp Int)
          -> (Index (Exp Int) -> Exp a)
-         -> Exp (Array (Shape (Exp Int)) a)  
+         -> Exp (Array (Shape (Exp Int)) a)
 generate = Generate 
 
 

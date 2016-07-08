@@ -52,6 +52,8 @@ library
                  , PATL.AST
                  , PATL.Eval                                 
                  , PATL.Shape
+                 , PATL.EDSL
+                 , PATL.EDSLCompile 
   
   -- Modules included in this library but not exported.
   -- other-modules:       

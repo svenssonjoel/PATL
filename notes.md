@@ -22,8 +22,41 @@
  Block should not affix another dimension to the array it "blocks up".
 
  
+## Compiler structure plan 
 
- 
- 
+  EDSL          STANDALONE                      
+   |               *Concrete syntax 
+ EDSLCompile       *Parsing 
+  * Sharing          /
+  * Graph repr      /
+  * Create Lets    /
+             \    /
+              \  /
+               \/  
+               AST  
+                | 
+              Fusion 
+                |             (Order of these operations 
+             Tune Param        may change ) 
+             Extraction 
+                | 
+             Parameter        
+	     Validation       (Check if tuning parameters 
+            (QuickCheck)       are used correctly) 
+                |  
+               / \
+              /   \ 
+             /     \ 
+       Platform    Platform 
+       dependent   dependent
+       tuning      tuning 
+         |           | 
+       OpenCL       OpenCL 
+     (or other) 
 
+
+## Types
+   
+   
  
+   
