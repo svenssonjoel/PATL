@@ -6,17 +6,11 @@
 module PATL.AST where
 
 import PATL.Shape
-
-data Value = VFloat Float
-           | VInt   Int
-             deriving (Eq,Show)
+import PATL.Value 
+import PATL.TuneParam
+import PATL.Operators
 
 type Size = Exp 
-
-
-{- extents -} 
-
-type Extents = Shape Size
 
 {- The Language -} 
 
@@ -49,7 +43,7 @@ data Exp = -- Annotated with what "top-level" types these would have
 
            -- Create an array (todo more ways)
            -- Iota :: Extents -> Array sh Int 
-         | Iota Extents  -- what does this mean for multidim arrays ?
+         | Iota (Shape Exp)  -- what does this mean for multidim arrays ?
 
 
            -- Project from N-dimensional arrays
@@ -78,7 +72,7 @@ data Exp = -- Annotated with what "top-level" types these would have
            ------------------------------------------------------- 
            
            -- Generate :: Extents -> (Index -> a) -> Array sh a 
-         | Generate Extents Exp
+         | Generate (Shape Exp) Exp
            
            -- Map :: (a -> b) -> Array sh a -> Array sh b 
          | Map Exp Exp
@@ -101,17 +95,7 @@ data Exp = -- Annotated with what "top-level" types these would have
            -- | Scan 
            
            deriving (Eq, Show)
-           
-
-data Op = Add | Sub | Mul | Div
-        deriving (Eq, Show)
-        
-          
--- Tuning parameters and blocking descriptors
-data TP = TPInt
-        | TPBool
-          deriving (Eq, Show)
-
+                    
 -- Need to change the way to express blocking (maybe using projections
 -- and Generates) 
 data Blocking = Square Exp

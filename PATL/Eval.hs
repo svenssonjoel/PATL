@@ -5,6 +5,9 @@ module PATL.Eval where
 
 import PATL.AST
 import PATL.Shape
+import PATL.Value
+import PATL.Operators
+import PATL.TuneParam
 
 import qualified Data.Vector as V 
 import qualified Data.Map as M
@@ -169,7 +172,7 @@ eval e = evalState (doEval e) emptyEnv
 
     appNotAFun = error "First argument of App is not a function"
 
-    evalIota :: Extents -> E EvalResult
+    evalIota :: (Shape Exp) -> E EvalResult
     evalIota e =
       do shape <- evalExtents e
          let  size  = sizeExtents shape

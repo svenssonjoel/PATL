@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilies #-}
 
 module PATL.EDSLCompile where
 
@@ -10,6 +11,7 @@ import Data.Reify
 import Data.Reify.Graph
 
 
--- For suitable restrictions on a 
-compile :: E.Exp a -> A.Exp
-compile = undefined 
+--compile :: E.Exp a -> A.Exp
+--compile = undefined 
+
+

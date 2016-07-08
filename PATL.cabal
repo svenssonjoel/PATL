@@ -50,9 +50,13 @@ library
   -- Modules exported by the library.
   exposed-modules: PATL.GenOpenCL
                  , PATL.AST
+                 , PATL.Operators
+                 , PATL.TuneParam
+                 , PATL.Value
                  , PATL.Eval                                 
                  , PATL.Shape
                  , PATL.EDSL
+                 , PATL.EDSLSyntax 
                  , PATL.EDSLCompile 
   
   -- Modules included in this library but not exported.
