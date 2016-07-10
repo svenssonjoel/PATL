@@ -23,7 +23,7 @@ newtype Expr = Expr {syntax :: Syntax Expr}
 -- TODO: Detect sharing and establish Lets
 
 
-
+-- Testing: 
 generate :: Exp (Shape (Exp Int))
          -> (Exp (Index (Exp Int)) -> Exp a)
          -> Exp (Array (Shape (Exp Int)) a)
