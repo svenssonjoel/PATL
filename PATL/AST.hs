@@ -23,6 +23,11 @@ data Exp = -- Annotated with what "top-level" types these would have
            Constant Value
            -- :: Int, Float, Array sh a, (a -> b) ... 
          | Var Identifier
+
+           -- Shape and Index expressions 
+         | Sh (Shape Exp)
+         | Ix (Shape Exp) 
+           
            -- :: Tune Int, Tune Bool 
          | TuneParam TP  -- tuning parameters
 
@@ -42,8 +47,8 @@ data Exp = -- Annotated with what "top-level" types these would have
 
 
            -- Create an array (todo more ways)
-           -- Iota :: Extents -> Array sh Int 
-         | Iota (Shape Exp)  -- what does this mean for multidim arrays ?
+           -- Iota :: (Shape Int) -> Array sh Int 
+         | Iota Exp  -- what does this mean for multidim arrays ?
 
 
            -- Project from N-dimensional arrays
@@ -71,8 +76,8 @@ data Exp = -- Annotated with what "top-level" types these would have
            -- Patterns
            ------------------------------------------------------- 
            
-           -- Generate :: Extents -> (Index -> a) -> Array sh a 
-         | Generate (Shape Exp) Exp
+           -- Generate :: (Shape Int) -> (Index -> a) -> Array sh a 
+         | Generate Exp Exp
            
            -- Map :: (a -> b) -> Array sh a -> Array sh b 
          | Map Exp Exp
@@ -107,7 +112,7 @@ data Blocking = Square Exp
 ------------------------------------------------------------
 -- Examples
 myArray :: Exp
-myArray = Iota (Z :. (Constant (VInt 100)))
+myArray = Iota (Sh (Z :. (Constant (VInt 100))))
 
 myFun :: Exp
 myFun = Lam "a" (Op Add [(Var "a"),(Constant (VInt 1))])
@@ -127,8 +132,8 @@ blocked_mmult =
   Let "tp" (TuneParam TPInt) $
   Let "blocked_m1" (Block (Square (Var "tp")) (Var "m1")) $
   Let "blocked_m2" (Block (Square (Var "tp")) (Var "m2")) $
-  Let "block_rows_m1" (ZipWith extract_row (Var "blocked_m1") (Iota (Z:.(Var "bs")))) $
-  Let "block_cols_m2" (ZipWith extract_col (Var "blocked_m2") (Iota (Z:.(Var "bs")))) $
+  Let "block_rows_m1" (ZipWith extract_row (Var "blocked_m1") (Iota (Sh (Z:.(Var "bs"))))) $
+  Let "block_cols_m2" (ZipWith extract_col (Var "blocked_m2") (Iota (Sh (Z:.(Var "bs"))))) $
   Let "bs" (SizeOf (Var "blocked_m1")) $ -- assuming square
   Let "outer_gen" (Lam "m1"    
                    $ Lam "m2" 
@@ -147,7 +152,7 @@ blocked_mmult =
                       (apply extract_col [Var "j", Var "m2"]))) $
   Let "mmult" (Lam "m1"
                $ Lam "m2"
-               $ Generate (Z:.(Var "tp"):.(Var "tp"))
+               $ Generate (Sh (Z:.(Var "tp"):.(Var "tp")))
                  $ apply (Var "gen_fun") [Var "m1", Var "m2"]) $
   Let "multiply" (Lam "x"
                   $ Lam "y"
@@ -156,7 +161,7 @@ blocked_mmult =
              $ Lam "y"
              $ Op Add [Var "x", Var "y"]) $
 
-  UnBlock $ Generate (Z:.(Var "bs"):.(Var "bs"))
+  UnBlock $ Generate (Sh (Z:.(Var "bs"):.(Var "bs")))
           $ apply (Var "outer_gen") [Var "blocked_m1",
                                     Var "blocked_m2"]
                
@@ -179,7 +184,7 @@ apply e (x:xs) = apply (App e x) xs
 
 mmult_example =
   let c = Constant (VInt 128) 
-  in App (App blocked_mmult (Iota (Z:.c:.c))) (Iota (Z:.c:.c))
+  in App (App blocked_mmult (Iota (Sh (Z:.c:.c)))) (Iota (Sh (Z:.c:.c)))
 
 
 ------------------------------------------------------------

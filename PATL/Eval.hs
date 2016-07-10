@@ -81,7 +81,15 @@ eval e = evalState (doEval e) emptyEnv
              Function f -> return $ f ee
              _          -> appNotAFun
 
-      Op op es -> evalOp op es 
+      -- Evaluate any operator
+      Op op es -> evalOp op es
+
+      -- SHAPES
+      Sh shape -> do
+        ext <- evalExtents shape 
+        return $ Shap ext
+
+      Ix shape -> error "NOT IMPLEMENTED" 
 
       -- Let bindings. Extends the environment
       Let ident e1 e2 ->
@@ -90,8 +98,14 @@ eval e = evalState (doEval e) emptyEnv
            let env2 = M.insert ident ee1 env
            put env2
            doEval e2
-      
-      Iota extents -> evalIota extents 
+
+      -- Iota. Shape to array 
+      Iota extents -> do
+        extents' <- doEval extents
+        case extents' of
+          (Shap e) -> evalIota e
+          _ -> error "Argument to Iota must be a shape" 
+   
 
       -- Project out of container
       Prj e idx -> undefined
@@ -172,11 +186,11 @@ eval e = evalState (doEval e) emptyEnv
 
     appNotAFun = error "First argument of App is not a function"
 
-    evalIota :: (Shape Exp) -> E EvalResult
-    evalIota e =
-      do shape <- evalExtents e
-         let  size  = sizeExtents shape
-         return $ Array shape (V.generate  size (\i -> (Scalar (VInt i))))
+    evalIota :: (Shape EvalResult) -> E EvalResult
+    evalIota sh =
+      do --shape <- evalExtents e
+         let  size  = sizeExtents sh
+         return $ Array sh (V.generate size (\i -> (Scalar (VInt i))))
         
     evalExtents Z = return Z 
     evalExtents (sh:.e) =
