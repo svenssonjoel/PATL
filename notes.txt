@@ -16,7 +16,7 @@
 
 
  I think, yes.
- For example "Block" should (for tuning) should create an Array of arrays
+ For example "Block" (for tuning) should create an Array of arrays
  (Block can be implemented using Generate and Prj)
 
  Block should not affix another dimension to the array it "blocks up".
