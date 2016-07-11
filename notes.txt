@@ -56,7 +56,8 @@
 
 
 ## Types
-   
+  * Statically typed	 
+  * Type checking 
    
  
    
