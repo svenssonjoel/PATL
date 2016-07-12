@@ -83,8 +83,8 @@ extract_page :: Exp (Array '[Exp Int, Exp Int, Exp Int] (Exp a))
              -> Exp (Array '[Exp Int, Exp Int] (Exp a))
 extract_page arr page = liftSE
                         $ Prj (toExp arr)
-                              (toExp (IIndex page:.IAll:.IAll:.Z)
-                                      :: Shape '[I (Exp Int), I (Exp Int), I (Exp Int)])
+                              (toExp (IIndex page:.IAll:.IAll:.Z
+                                      :: Shape '[I (Exp Int), I (Exp Int), I (Exp Int)]))
                      
                                        
                                        
