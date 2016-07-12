@@ -5,9 +5,9 @@
 module PATL.EDSL where
 
 import PATL.Value
-import PATL.Shape
-import PATL.EDSLSyntax hiding (IRange, IIndex) 
-import qualified PATL.EDSLSyntax as S 
+import PATL.EDSL.Shape
+import PATL.EDSL.Syntax hiding (IRange, IIndex) 
+import qualified PATL.EDSL.Syntax as S 
 
 import Prelude hiding (map) 
 import qualified Prelude as P

@@ -54,10 +54,10 @@ library
                  , PATL.TuneParam
                  , PATL.Value
                  , PATL.Eval                                 
-                 , PATL.Shape
                  , PATL.EDSL
-                 , PATL.EDSLSyntax 
-                 , PATL.EDSLCompile 
+                 , PATL.EDSL.Syntax 
+                 , PATL.EDSL.Compile 
+                 , PATL.EDSL.Shape
   
   -- Modules included in this library but not exported.
   -- other-modules:       

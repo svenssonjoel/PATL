@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable #-}
 
 
-module PATL.EDSLSyntax where 
+module PATL.EDSL.Syntax where 
 
 
 -- import PATL.Shape

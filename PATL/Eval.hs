@@ -4,8 +4,8 @@ module PATL.Eval where
 
 
 import PATL.AST
-import qualified PATL.Shape as S
-import PATL.Shape hiding (Z)
+import qualified PATL.EDSL.Shape as S -- TODO: This is unfortunate, fix it! 
+import PATL.EDSL.Shape hiding (Z)
 
 import PATL.Value
 import PATL.Operators

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable #-}
 
-module PATL.Shape where 
+module PATL.EDSL.Shape where 
 
 {- Shapes, extents and indexing -} 
 

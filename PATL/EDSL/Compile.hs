@@ -1,8 +1,9 @@
 {-# LANGUAGE TypeFamilies #-}
 
-module PATL.EDSLCompile where
+module PATL.EDSL.Compile where
 
-import PATL.Shape
+import PATL.EDSL.Shape
+
 import qualified PATL.AST as A 
 import qualified PATL.EDSL as E
 
