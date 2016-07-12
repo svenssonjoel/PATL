@@ -6,7 +6,8 @@ module PATL.EDSL where
 
 import PATL.Value
 import PATL.Shape
-import PATL.EDSLSyntax
+import PATL.EDSLSyntax hiding (IRange, IIndex) 
+import qualified PATL.EDSLSyntax as S 
 
 import Prelude hiding (map) 
 import qualified Prelude as P 
@@ -47,6 +48,8 @@ foldExpr f a (Expr e) = fse (\i j -> f i (Expr j))  a e
     fse :: (a -> Syntax Expr -> a) -> a -> Syntax Expr -> a
     fse f a e@(Sh (shp)) = fse f a (syntax shp)
     fse f a e@(Ix (idx)) = fse f a (syntax idx)
+    fse f a e@(S.IIndex s) = f (f a (syntax s)) e 
+    fse f a e@(S.IRange s1 s2) = f (foldl f a (P.map syntax [s1,s2])) e
     fse f a e@(Op _ es)  = f (foldl f a (P.map syntax es)) e
     fse f a e@(Lam id s) = f (f a (syntax s)) e 
     fse f a e = f a e 
