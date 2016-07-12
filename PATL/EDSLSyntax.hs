@@ -15,8 +15,9 @@ type Identifier = Integer
 data Syntax s = Constant Value
               | Var Identifier 
               | TuneParam TP
-              | Sh (Shape s)
-              | Ix (Index s) 
+              | Sh s
+              | Ix s
+              | Z | IAll | IIndex s | IRange s s 
               | Op Op [s]
               | Lam Identifier s
               | App s s
@@ -28,6 +29,9 @@ data Syntax s = Constant Value
               | ZipWith s s s
               | Reduce s s s
               deriving (Functor, Foldable, Traversable, Show)
+
+
+
               
               
 

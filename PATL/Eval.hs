@@ -4,7 +4,9 @@ module PATL.Eval where
 
 
 import PATL.AST
-import PATL.Shape
+import qualified PATL.Shape as S
+import PATL.Shape hiding (Z)
+
 import PATL.Value
 import PATL.Operators
 import PATL.TuneParam
@@ -21,8 +23,8 @@ import Control.Monad.State
 
 -- Clean this up later
 data EvalResult = Scalar Value
-                | Array  (Shape EvalResult) (V.Vector (EvalResult))
-                | Shap   (Shape EvalResult)  -- Better constr names! (maybe prefix Eval_)
+                | Array  (S.Shape EvalResult) (V.Vector (EvalResult))
+                | Shap   (S.Shape EvalResult)  -- Better constr names! (maybe prefix Eval_)
                 | Tuning TP
                 | Function (EvalResult -> EvalResult)
 
@@ -174,9 +176,9 @@ eval e = evalState (doEval e) emptyEnv
            case e' of
              (Array sh v) ->
                case sh of
-                 Z ->  return $ Array sh v
-                 (Z:._) -> return $ Array Z (V.singleton $ V.foldr
-                                              (\x y -> let Function f' = f x in f y) e_id' v)
+                 S.Z ->  return $ Array sh v
+                 (S.Z:._) -> return $ Array S.Z (V.singleton $ V.foldr
+                                               (\x y -> let Function f' = f x in f y) e_id' v)
                  _ -> error "NOT SUPPORTED"
              _ -> error "Argument to reduce is not an Array" 
     
@@ -186,20 +188,20 @@ eval e = evalState (doEval e) emptyEnv
 
     appNotAFun = error "First argument of App is not a function"
 
-    evalIota :: (Shape EvalResult) -> E EvalResult
+    evalIota :: (S.Shape EvalResult) -> E EvalResult
     evalIota sh =
       do --shape <- evalExtents e
          let  size  = sizeExtents sh
          return $ Array sh (V.generate size (\i -> (Scalar (VInt i))))
         
-    evalExtents Z = return Z 
-    evalExtents (sh:.e) =
+    evalExtents Z = return S.Z 
+    evalExtents (Snoc sh e) =
       do sh' <- evalExtents sh
          e' <- doEval e
-         return $ sh':.e'
+         return $  sh':. e'
         
-    sizeExtents :: Shape EvalResult -> Int
-    sizeExtents Z = 1
+    sizeExtents :: S.Shape EvalResult -> Int
+    sizeExtents S.Z = 1
     sizeExtents (sh:.Scalar (VInt v)) = v * sizeExtents sh
     sizeExtents _ = error "Invalid shape"
     
