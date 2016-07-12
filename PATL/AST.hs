@@ -30,7 +30,7 @@ data Exp = -- Annotated with what "top-level" types these would have
          | Sh Exp
          | Ix Exp   
          | Z
-         | Snoc Exp Exp
+         | Cons Exp Exp
          | IAll | IIndex Exp | IRange Exp Exp 
 
            -- :: Tune Int, Tune Bool 
@@ -117,7 +117,7 @@ data Blocking = Square Exp
 ------------------------------------------------------------
 -- Examples
 myArray :: Exp
-myArray = Iota (Snoc Z (Constant (VInt 100)))
+myArray = Iota (Cons (Constant (VInt 100)) Z)
 
 myFun :: Exp
 myFun = Lam "a" (Op Add [(Var "a"),(Constant (VInt 1))])

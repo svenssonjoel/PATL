@@ -22,7 +22,7 @@ data Syntax s = Constant Value
               | TuneParam TP
               | Sh s
               | Ix s
-              | Z | IAll | IIndex s | IRange s s | Snoc s s 
+              | Z | IAll | IIndex s | IRange s s | Cons s s 
               | Op Op [s]
               | Lam Identifier s
               | App s s

@@ -74,7 +74,7 @@ extract_row :: Exp (Array '[Exp Int,Exp Int] (Exp a))
             -> Exp (Array '[Exp Int] (Exp a))
 extract_row arr row = liftSE
                       $ Prj (toExp arr)
-                            (toExp (Z:.IAll:.IIndex row
+                            (toExp (IIndex row:.IAll:.Z 
                                     :: Shape '[I (Exp Int),I (Exp Int)]))
                                     -- Need to annotate here
                                     -- to be able to find the toExp instance
@@ -103,7 +103,7 @@ instance Expable (Shape '[]) where
   toExp Z =  Expr S.Z
 
 instance (Expable (Shape b), Expable a) => Expable (Shape (a ': b)) where
-  toExp (a:.b) = Expr $ S.Snoc (toExp a) (toExp b) 
+  toExp (a:.b) = Expr $ S.Cons (toExp a) (toExp b) 
          
 
 instance Expable a => Expable (I a) where

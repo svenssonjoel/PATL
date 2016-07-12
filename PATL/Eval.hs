@@ -21,8 +21,8 @@ import Control.Monad.State
 -- Evaluation
 
 type EvalShape = [EvalResult]
-snoclist :: a -> [a] -> [a]
-snoclist a (xs) = reverse (a : (reverse xs))
+--snoclist :: a -> [a] -> [a]
+--snoclist a (xs) = reverse (a : (reverse xs))
 
 -- Clean this up later
 data EvalResult = Scalar Value
@@ -199,10 +199,10 @@ eval e = evalState (doEval e) emptyEnv
 
     evalExtents :: Exp -> E EvalShape
     evalExtents Z = return [] 
-    evalExtents (Snoc sh e) =
+    evalExtents (Cons sh e) =
       do sh' <- evalExtents sh
          e' <- doEval e
-         return $  snoclist e' sh'
+         return $  e' : sh'
         
     sizeExtents :: EvalShape -> Int
     sizeExtents xs = foldl (\b (Scalar (VInt v))  -> v * b) 1 xs 
