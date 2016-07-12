@@ -54,8 +54,5 @@ instance Expable a => Expable (Shape a) where
 
 instance Expable a => Expable (I a) where
   toExp = undefined 
-
---instance Expable a => Expable (Index a) where
---  toExp = undefined 
          
         

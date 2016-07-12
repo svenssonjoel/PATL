@@ -4,6 +4,7 @@ module PATL.Shape where
 
 {- Shapes, extents and indexing -} 
 
+-- TODO: Do we want shapes in the types in the embedding
 data Shape a = Z
              | (Shape a) :. a
              deriving (Functor, Foldable, Traversable, Eq,Show)
