@@ -20,7 +20,7 @@ import qualified Prelude as P
 --       This is because the actual shape is not encoded in the type.
 --       Either have the "actual" shape in the type or remove shape
 --       from array types (as it is stating the obvious -- this array has a shape).
---      
+-- DONE: The above todo is partially FIXED. May need polishing 
 data Array sh a 
 
 
@@ -58,7 +58,15 @@ reduce f b arr = liftSE $ Reduce (toExp f) (toExp b) (toExp arr)
 -- Create an array 
 iota :: Exp (Shape sh)
      -> Exp (Array (Shape sh) (Exp Int))
-iota sh = liftSE $ Iota (toExp sh) 
+iota sh = liftSE $ Iota (toExp sh)
+
+
+-- A tuning parameter of type Int
+-- TODO: Make sure we can detect sharing of these!
+--       I suspect they may always be inlined 
+tInt :: Exp Int 
+tInt = liftSE $ TuneParam TPInt 
+
 
 
 -- test

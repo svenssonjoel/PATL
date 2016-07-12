@@ -19,7 +19,7 @@ import Data.Reify.Graph
 
 
 -- ------------------------------------------------------------
---
+-- Reify Graph 
 -- ------------------------------------------------------------
 
 instance MuRef Expr where
@@ -29,3 +29,10 @@ instance MuRef Expr where
 
 genGraph :: MuRef s => s -> IO (Graph (DeRef s))
 genGraph = reifyGraph 
+
+
+-- ------------------------------------------------------------
+-- Graph Analysis
+-- ------------------------------------------------------------
+
+
