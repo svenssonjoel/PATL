@@ -17,6 +17,7 @@ import Data.Reify.Graph
 --compile :: E.Exp a -> A.Exp
 --compile = undefined 
 
+-- TODO: Detect sharing and establish Lets
 
 -- ------------------------------------------------------------
 -- Reify Graph 

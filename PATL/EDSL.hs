@@ -15,24 +15,13 @@ import Prelude hiding (map, zipWith, div )
 import qualified Prelude as P
 
 
+-- Type level tag to annotate Array valued expressions 
+data Array (sh :: [*]) a
 
--- TODO: Shape is part of Array type..
---       But is not conveying any information!
---       This is because the actual shape is not encoded in the type.
---       Either have the "actual" shape in the type or remove shape
---       from array types (as it is stating the obvious -- this array has a shape).
-
--- DONE: The above todo is partially FIXED. May need polishing 
-
-data Array (sh :: [*]) a 
-
-
+-- ------------------------------------------------------------
 -- Front-end embedded language for generating PATL.AST
--- TODO: define front-end functions
--- TODO: Detect sharing and establish Lets
+-- ------------------------------------------------------------
 
-
--- Testing: 
 generate :: Exp (Shape sh)
          -> Exp (Index sh -> Exp a)
          -> Exp (Array sh a)
@@ -68,7 +57,7 @@ iota sh = liftSE $ Iota (toExp sh)
 tInt :: Exp Int 
 tInt = liftSE $ TuneParam TPInt 
 
--- test
+-- Extract row and column from 2d array 
 extract_row :: Exp (Array '[Exp Int,Exp Int] (Exp a))
             -> Exp Int
             -> Exp (Array '[Exp Int] (Exp a))
@@ -79,6 +68,26 @@ extract_row arr row = liftSE
                                     -- Need to annotate here
                                     -- to be able to find the toExp instance
 
+extract_col :: Exp (Array '[Exp Int,Exp Int] (Exp a))
+            -> Exp Int
+            -> Exp (Array '[Exp Int] (Exp a))
+extract_col arr col = liftSE
+                      $ Prj (toExp arr)
+                            (toExp (IAll:.IIndex col:.Z 
+                                    :: Shape '[I (Exp Int),I (Exp Int)]))
+                                    -- Need to annotate here
+                                    -- to be able to find the toExp instance
+
+-- Index all the way to a scalar
+-- TODO: Enforce ix is an index of shape sh.
+--       Is the below attempt ok ?                                     
+index :: Exp (Array sh (Exp a))
+      -> Exp (Index sh)
+      -> Exp a
+index arr ix = liftSE $ Prj (toExp arr)
+                            (toExp ix)
+                                       
+                                       
 -- TODO: prj becomes tricky at this point
 --prj :: (Exp (Index (Exp Int)))
 --    -> Exp (Array (Shape (Exp Int)) (Exp a))
