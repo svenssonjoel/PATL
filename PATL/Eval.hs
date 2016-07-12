@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, GADTs #-}
 
 module PATL.Eval where
 
@@ -20,11 +20,14 @@ import Control.Monad.State
 ------------------------------------------------------------
 -- Evaluation
 
+type EvalShape = [EvalResult]
+snoclist :: a -> [a] -> [a]
+snoclist a (xs) = reverse (a : (reverse xs))
 
 -- Clean this up later
 data EvalResult = Scalar Value
-                | Array  (S.Shape EvalResult) (V.Vector (EvalResult))
-                | Shap   (S.Shape EvalResult)  -- Better constr names! (maybe prefix Eval_)
+                | Array  EvalShape (V.Vector (EvalResult))
+                | Shap   EvalShape  -- Better constr names! (maybe prefix Eval_)
                 | Tuning TP
                 | Function (EvalResult -> EvalResult)
 
@@ -176,9 +179,9 @@ eval e = evalState (doEval e) emptyEnv
            case e' of
              (Array sh v) ->
                case sh of
-                 S.Z ->  return $ Array sh v
-                 (S.Z:._) -> return $ Array S.Z (V.singleton $ V.foldr
-                                               (\x y -> let Function f' = f x in f y) e_id' v)
+                 [] ->  return $ Array sh v
+                 [x] -> return $ Array [] (V.singleton $ V.foldr
+                                           (\x y -> let Function f' = f x in f y) e_id' v)
                  _ -> error "NOT SUPPORTED"
              _ -> error "Argument to reduce is not an Array" 
     
@@ -188,22 +191,24 @@ eval e = evalState (doEval e) emptyEnv
 
     appNotAFun = error "First argument of App is not a function"
 
-    evalIota :: (S.Shape EvalResult) -> E EvalResult
+    evalIota :: EvalShape -> E EvalResult
     evalIota sh =
       do --shape <- evalExtents e
          let  size  = sizeExtents sh
          return $ Array sh (V.generate size (\i -> (Scalar (VInt i))))
-        
-    evalExtents Z = return S.Z 
+
+    evalExtents :: Exp -> E EvalShape
+    evalExtents Z = return [] 
     evalExtents (Snoc sh e) =
       do sh' <- evalExtents sh
          e' <- doEval e
-         return $  sh':. e'
+         return $  snoclist e' sh'
         
-    sizeExtents :: S.Shape EvalResult -> Int
-    sizeExtents S.Z = 1
-    sizeExtents (sh:.Scalar (VInt v)) = v * sizeExtents sh
-    sizeExtents _ = error "Invalid shape"
+    sizeExtents :: EvalShape -> Int
+    sizeExtents xs = foldl (\b (Scalar (VInt v))  -> v * b) 1 xs 
+--    sizeExtents S.Z = 1
+--    sizeExtents (sh:.Scalar (VInt v)) = v * sizeExtents sh
+--    sizeExtents _ = error "Invalid shape"
     
     
 

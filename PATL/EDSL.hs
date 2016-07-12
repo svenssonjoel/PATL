@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, TypeOperators, FlexibleInstances, FlexibleContexts  #-}
 
 
 
@@ -7,7 +7,7 @@ module PATL.EDSL where
 import PATL.Value
 import PATL.Operators 
 import PATL.EDSL.Shape
-import PATL.EDSL.Syntax hiding (IRange, IIndex) 
+import PATL.EDSL.Syntax hiding (IRange, IIndex, Z, IAll ) 
 import qualified PATL.EDSL.Syntax as S 
 
 import Prelude hiding (map, zipWith, div ) 
@@ -32,36 +32,47 @@ data Array sh a
 
 
 -- Testing: 
-generate :: Exp (Shape (Exp Int))
-         -> Exp (Index (Exp Int) -> Exp a)
-         -> Exp (Array (Shape (Exp Int)) a)
+generate :: Exp (Shape sh)
+         -> Exp (Index sh -> Exp a)
+         -> Exp (Array (Shape sh) a)
 generate sh f =  liftSE $ Generate (toExp sh) (toExp f) 
                                   
 map :: Exp (Exp a -> Exp b) 
-    -> Exp (Array (Shape (Exp Int)) (Exp a)) 
-    -> Exp (Array (Shape (Exp Int)) (Exp b))
+    -> Exp (Array (Shape sh) (Exp a)) 
+    -> Exp (Array (Shape sh) (Exp b))
 map f arr = liftSE $ Map (toExp f) (toExp arr)
 
 zipWith :: Exp (Exp a -> Exp b -> Exp c) 
-        -> Exp (Array (Shape (Exp Int)) (Exp a))
-        -> Exp (Array (Shape (Exp Int)) (Exp b))
-        -> Exp (Array (Shape (Exp Int)) (Exp c))
+        -> Exp (Array (Shape sh) (Exp a))
+        -> Exp (Array (Shape sh) (Exp b))
+        -> Exp (Array (Shape sh) (Exp c))
 zipWith f a1 a2 = liftSE $ ZipWith (toExp f) (toExp a1) (toExp a2) 
 
 -- Reduce all the way to scalar 
 reduce :: Exp (Exp a -> Exp b -> Exp b)
        -> Exp b
-       -> Exp (Array (Shape (Exp Int)) (Exp a))
+       -> Exp (Array (Shape sh) (Exp a))
        -> Exp b
 reduce f b arr = liftSE $ Reduce (toExp f) (toExp b) (toExp arr) 
 
 -- Create an array 
-iota :: Exp (Shape (Exp Int))
-     -> Exp (Array (Shape (Exp Int)) (Exp Int))
+iota :: Exp (Shape sh)
+     -> Exp (Array (Shape sh) (Exp Int))
 iota sh = liftSE $ Iota (toExp sh) 
 
 
--- TODO: Project becomes tricky at this point
+-- test
+extract_row :: Exp (Array (Shape (Z:.(Exp Int):.(Exp Int))) (Exp a))
+            -> Exp Int
+            -> Exp (Array (Shape (Z:.(Exp Int))) (Exp a))
+extract_row arr row = liftSE
+                      $ Prj (toExp arr)
+                            (toExp (Z:.IAll:.IIndex row
+                                    :: (Shape (Z:.I (Exp Int):. I (Exp Int)))))
+                                    -- Need to annotate here
+                                    -- to be able to find the toExp instance
+
+-- TODO: prj becomes tricky at this point
 --prj :: (Exp (Index (Exp Int)))
 --    -> Exp (Array (Shape (Exp Int)) (Exp a))
 --    -> 
@@ -81,8 +92,12 @@ instance (Expable a, Expable b) => Expable (a -> b) where
   toExp = undefined
 
 --Shape is now entirely a front end thing
-instance Expable a => Expable (Shape a) where
-  toExp = undefined
+instance Expable (Shape Z) where
+  toExp Z =  Expr S.Z
+
+instance (Expable (Shape a), Expable b) => Expable (Shape (a :. b)) where
+  toExp (a:.b) = Expr $ S.Snoc (toExp a) (toExp b) 
+         
 
 instance Expable a => Expable (I a) where
   toExp = undefined 
