@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs, TypeOperators, FlexibleInstances, FlexibleContexts  #-}
-
-
+{-# LANGUAGE DataKinds      #-}
+{-# LANGUAGE KindSignatures #-}
 
 module PATL.EDSL where
 
@@ -21,7 +21,7 @@ import qualified Prelude as P
 --       Either have the "actual" shape in the type or remove shape
 --       from array types (as it is stating the obvious -- this array has a shape).
 --      
-data Array sh a 
+data Array (sh :: [*]) a 
 
 
 
@@ -34,41 +34,41 @@ data Array sh a
 -- Testing: 
 generate :: Exp (Shape sh)
          -> Exp (Index sh -> Exp a)
-         -> Exp (Array (Shape sh) a)
+         -> Exp (Array sh a)
 generate sh f =  liftSE $ Generate (toExp sh) (toExp f) 
                                   
 map :: Exp (Exp a -> Exp b) 
-    -> Exp (Array (Shape sh) (Exp a)) 
-    -> Exp (Array (Shape sh) (Exp b))
+    -> Exp (Array sh (Exp a)) 
+    -> Exp (Array sh (Exp b))
 map f arr = liftSE $ Map (toExp f) (toExp arr)
 
 zipWith :: Exp (Exp a -> Exp b -> Exp c) 
-        -> Exp (Array (Shape sh) (Exp a))
-        -> Exp (Array (Shape sh) (Exp b))
-        -> Exp (Array (Shape sh) (Exp c))
+        -> Exp (Array sh (Exp a))
+        -> Exp (Array sh (Exp b))
+        -> Exp (Array sh (Exp c))
 zipWith f a1 a2 = liftSE $ ZipWith (toExp f) (toExp a1) (toExp a2) 
 
 -- Reduce all the way to scalar 
 reduce :: Exp (Exp a -> Exp b -> Exp b)
        -> Exp b
-       -> Exp (Array (Shape sh) (Exp a))
+       -> Exp (Array sh (Exp a))
        -> Exp b
 reduce f b arr = liftSE $ Reduce (toExp f) (toExp b) (toExp arr) 
 
 -- Create an array 
 iota :: Exp (Shape sh)
-     -> Exp (Array (Shape sh) (Exp Int))
+     -> Exp (Array sh (Exp Int))
 iota sh = liftSE $ Iota (toExp sh) 
 
 
 -- test
-extract_row :: Exp (Array (Shape (Z:.(Exp Int):.(Exp Int))) (Exp a))
+extract_row :: Exp (Array '[Exp Int,Exp Int] (Exp a))
             -> Exp Int
-            -> Exp (Array (Shape (Z:.(Exp Int))) (Exp a))
+            -> Exp (Array '[Exp Int] (Exp a))
 extract_row arr row = liftSE
                       $ Prj (toExp arr)
                             (toExp (Z:.IAll:.IIndex row
-                                    :: (Shape (Z:.I (Exp Int):. I (Exp Int)))))
+                                    :: Shape '[I (Exp Int),I (Exp Int)]))
                                     -- Need to annotate here
                                     -- to be able to find the toExp instance
 
@@ -92,10 +92,10 @@ instance (Expable a, Expable b) => Expable (a -> b) where
   toExp = undefined
 
 --Shape is now entirely a front end thing
-instance Expable (Shape Z) where
+instance Expable (Shape '[]) where
   toExp Z =  Expr S.Z
 
-instance (Expable (Shape a), Expable b) => Expable (Shape (a :. b)) where
+instance (Expable (Shape b), Expable a) => Expable (Shape (a ': b)) where
   toExp (a:.b) = Expr $ S.Snoc (toExp a) (toExp b) 
          
 
