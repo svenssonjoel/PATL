@@ -205,13 +205,8 @@ eval e = evalState (doEval e) emptyEnv
          return $  e' : sh'
         
     sizeExtents :: EvalShape -> Int
-    sizeExtents xs = foldl (\b (Scalar (VInt v))  -> v * b) 1 xs 
---    sizeExtents S.Z = 1
---    sizeExtents (sh:.Scalar (VInt v)) = v * sizeExtents sh
---    sizeExtents _ = error "Invalid shape"
+    sizeExtents xs = foldl (\b (Scalar (VInt v))  -> v * b) 1 xs     
     
-    
-
     evalOp :: Op -> [Exp] -> E EvalResult
     evalOp op1 [e1]    = undefined 
     evalOp op2 [e1,e2] =

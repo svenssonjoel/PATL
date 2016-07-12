@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators, EmptyDataDecls, GADTs #-}
+{-# LANGUAGE TypeOperators, GADTs #-}
 {-# LANGUAGE DataKinds #-}
 
 module PATL.EDSL.Shape where 

@@ -107,7 +107,10 @@ instance (Expable (Shape b), Expable a) => Expable (Shape (a ': b)) where
          
 
 instance Expable a => Expable (I a) where
-  toExp = undefined 
+  toExp (IIndex i)   = Expr $ S.IIndex (toExp i)
+  toExp (IRange i j) = Expr $ S.IRange (toExp i) (toExp j)
+  toExp  IAll        = Expr $ S.IAll 
+  
          
         
 -- ------------------------------------------------------------
