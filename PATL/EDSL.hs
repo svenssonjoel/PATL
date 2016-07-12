@@ -15,6 +15,12 @@ import qualified Prelude as P
 
 
 
+-- TODO: Shape is part of Array type..
+--       But is not conveying any information!
+--       This is because the actual shape is not encoded in the type.
+--       Either have the "actual" shape in the type or remove shape
+--       from array types (as it is stating the obvious -- this array has a shape).
+--      
 data Array sh a 
 
 
@@ -29,9 +35,24 @@ data Array sh a
 generate :: Exp (Shape (Exp Int))
          -> Exp (Index (Exp Int) -> Exp a)
          -> Exp (Array (Shape (Exp Int)) a)
-generate sh f =  Exp $ Expr $ Generate (Expr (Constant (VInt 1)))
-                                       (Expr (Constant (VInt 1)))
+generate sh f =  liftSE $ Generate (toExp sh) (toExp f) 
+                                  
+map :: Exp (Exp a -> Exp b) 
+    -> Exp (Array (Shape (Exp Int)) (Exp a)) 
+    -> Exp (Array (Shape (Exp Int)) (Exp b))
+map f arr = liftSE $ Map (toExp f) (toExp arr)
 
+zipWith :: Exp (Exp a -> Exp b -> Exp c) 
+        -> Exp (Array (Shape (Exp Int)) (Exp a))
+        -> Exp (Array (Shape (Exp Int)) (Exp b))
+        -> Exp (Array (Shape (Exp Int)) (Exp c))
+zipWith f a1 a2 = liftSE $ ZipWith (toExp f) (toExp a1) (toExp a2) 
+
+reduce :: Exp (Exp a -> Exp b -> Exp b)
+       -> Exp b
+       -> Exp (Array (Shape (Exp Int)) (Exp a))
+       -> Exp b
+reduce f b arr = liftSE $ Reduce (toExp f) (toExp b) (toExp arr) 
 
 
 

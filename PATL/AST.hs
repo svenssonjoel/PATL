@@ -97,7 +97,7 @@ data Exp = -- Annotated with what "top-level" types these would have
            -- How to specify what reduction to use ??
 
            -- I think now that there will be only one Reduce!
-           -- Reduce :: (a -> b -> b) -> b -> Array sh a -> a 
+           -- Reduce :: (a -> b -> b) -> b -> Array sh a -> b
          | Reduce Exp Exp Exp        
            -- | Permute ?
            -- | Scatter
