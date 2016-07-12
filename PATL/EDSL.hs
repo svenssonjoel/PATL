@@ -48,14 +48,23 @@ zipWith :: Exp (Exp a -> Exp b -> Exp c)
         -> Exp (Array (Shape (Exp Int)) (Exp c))
 zipWith f a1 a2 = liftSE $ ZipWith (toExp f) (toExp a1) (toExp a2) 
 
+-- Reduce all the way to scalar 
 reduce :: Exp (Exp a -> Exp b -> Exp b)
        -> Exp b
        -> Exp (Array (Shape (Exp Int)) (Exp a))
        -> Exp b
 reduce f b arr = liftSE $ Reduce (toExp f) (toExp b) (toExp arr) 
 
+-- Create an array 
+iota :: Exp (Shape (Exp Int))
+     -> Exp (Array (Shape (Exp Int)) (Exp Int))
+iota sh = liftSE $ Iota (toExp sh) 
 
 
+-- TODO: Project becomes tricky at this point
+--prj :: (Exp (Index (Exp Int)))
+--    -> Exp (Array (Shape (Exp Int)) (Exp a))
+--    -> 
 
 
 -- ------------------------------------------------------------
