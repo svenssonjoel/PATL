@@ -63,10 +63,10 @@ extract_row :: Exp (Array '[Exp Int,Exp Int] (Exp a))
             -> Exp (Array '[Exp Int] (Exp a))
 extract_row arr row = liftSE
                       $ Prj (toExp arr)
-                            (toExp (IIndex row:.IAll:.Z 
+                            (toExp (IIndex row:.IAll:.Z
                                     :: Shape '[I (Exp Int),I (Exp Int)]))
-                                    -- Need to annotate here
-                                    -- to be able to find the toExp instance
+                                       -- Need to annotate here
+                                       -- to be able to find the toExp instance
 
 extract_col :: Exp (Array '[Exp Int,Exp Int] (Exp a))
             -> Exp Int
@@ -75,8 +75,19 @@ extract_col arr col = liftSE
                       $ Prj (toExp arr)
                             (toExp (IAll:.IIndex col:.Z 
                                     :: Shape '[I (Exp Int),I (Exp Int)]))
-                                    -- Need to annotate here
-                                    -- to be able to find the toExp instance
+                                       -- Need to annotate here
+                                       -- to be able to find the toExp instance
+                                       
+extract_page :: Exp (Array '[Exp Int, Exp Int, Exp Int] (Exp a))
+             -> Exp Int
+             -> Exp (Array '[Exp Int, Exp Int] (Exp a))
+extract_page arr page = liftSE
+                        $ Prj (toExp arr)
+                              (toExp (IIndex page:.IAll:.IAll:.Z)
+                                      :: Shape '[I (Exp Int), I (Exp Int), I (Exp Int)])
+                     
+                                       
+                                       
 
 -- Index all the way to a scalar
 -- TODO: Enforce ix is an index of shape sh.
@@ -89,6 +100,7 @@ index arr ix = liftSE $ Prj (toExp arr)
                                        
                                        
 -- TODO: prj becomes tricky at this point
+               
 --prj :: (Exp (Index (Exp Int)))
 --    -> Exp (Array (Shape (Exp Int)) (Exp a))
 --    -> 
