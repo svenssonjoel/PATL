@@ -1,6 +1,6 @@
 
 {-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable #-}
-
+{-# LANGUAGE GeneralizedNewtypeDeriving #-} 
 
 module PATL.EDSL.Syntax where 
 
@@ -15,7 +15,8 @@ import qualified Prelude as P
 
 import qualified Data.Set as Set 
 
-type Identifier = Integer
+newtype Identifier = FunArg Integer
+                     deriving (Num, Eq, Ord, Show)
 
 data Syntax s = Constant Value
               | Var Identifier 

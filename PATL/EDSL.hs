@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs, TypeOperators, FlexibleInstances, FlexibleContexts  #-}
 {-# LANGUAGE DataKinds      #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE PolyKinds #-} 
+{-# LANGUAGE PolyKinds #-}      --- Which of these are really needed?
 
 module PATL.EDSL where
 
@@ -166,6 +166,8 @@ instance Expable Int where
 instance Expable Float where
   toExp f = Expr $ Constant (VFloat f)
 
+-- Need to "embed", for example, haskell functions on expressions
+-- before using them as argument to a pattern.
 emb :: Expable a => a -> Exp a 
 emb a = Exp . toExp $ a 
 
