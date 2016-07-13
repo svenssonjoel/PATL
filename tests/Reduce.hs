@@ -1,4 +1,3 @@
--- {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-} 
 
 module Main where 
