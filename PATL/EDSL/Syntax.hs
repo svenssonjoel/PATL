@@ -20,6 +20,7 @@ type Identifier = Integer
 data Syntax s = Constant Value
               | Var Identifier 
               | TuneParam TP
+              | Tuple [s]
               | Sh s
               | Ix s
               | Z | IAll | IIndex s | IRange s s | Cons s s 
@@ -41,7 +42,9 @@ data Syntax s = Constant Value
 newtype Exp a = Exp {unExp :: Expr}
 
 newtype Expr = Expr {syntax :: Syntax Expr}
-                 deriving (Show) 
+                 deriving (Show)
+
+var = Exp . Expr . Var 
               
 
 -- ------------------------------------------------------------
@@ -52,6 +55,7 @@ foldExpr :: (a -> Expr -> a) -> a -> Expr -> a
 foldExpr f a (Expr e) = fse (\i j -> f i (Expr j))  a e 
   where
     fse :: (a -> Syntax Expr -> a) -> a -> Syntax Expr -> a
+    fse f a e@(Tuple es) = f (foldl f a (P.map syntax es)) e
     fse f a e@(Sh (shp)) = fse f a (syntax shp)
     fse f a e@(Ix (idx)) = fse f a (syntax idx)
     fse f a e@(IIndex s) = f (f a (syntax s)) e 
@@ -69,9 +73,16 @@ foldExpr f a (Expr e) = fse (\i j -> f i (Expr j))  a e
     fse f a e = f a e -- nonrecursive cases 
 
 -- Collect identifier 
-idCollector :: Syntax Expr -> Set.Set Identifier
-idCollector s = doIt Set.empty s
+idCollector :: Set.Set Identifier -> Expr -> Set.Set Identifier
+idCollector a (Expr s) = doIt a s
   where
     doIt set (Var id) =  Set.insert id set
     doIt set (Lam id _) = Set.insert id set
     doIt set _ = set 
+
+-- ------------------------------------------------------------
+-- collect identifiers 
+-- ------------------------------------------------------------
+
+collectIds :: Expr -> Set.Set Identifier
+collectIds e = foldExpr idCollector Set.empty e 

@@ -1,6 +1,7 @@
 {-# LANGUAGE GADTs, TypeOperators, FlexibleInstances, FlexibleContexts  #-}
 {-# LANGUAGE DataKinds      #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE PolyKinds #-} 
 
 module PATL.EDSL where
 
@@ -13,6 +14,8 @@ import qualified PATL.EDSL.Syntax as S
 
 import Prelude hiding (map, zipWith, div ) 
 import qualified Prelude as P
+
+import qualified Data.Set as Set
 
 
 -- Type level tag to annotate Array valued expressions 
@@ -116,8 +119,26 @@ class Expable a where
 instance Expable (Exp a) where
   toExp = unExp
 
-instance (Expable a, Expable b) => Expable (a -> b) where
-  toExp = undefined
+instance Expable (Exp a -> Exp b) where
+  toExp f =
+    let (Exp e) = f $ var (-1)
+        the_id = Set.findMax (Set.insert (-1) $ collectIds e) + 1
+        (Exp e_real) = f $ var the_id
+        in Expr $ Lam the_id e_real
+
+instance Expable (Exp a -> Exp b -> Exp c) where
+  toExp f =
+    let (Exp e) = f (var (-1)) (var (-2)) 
+        the_id1 = Set.findMax
+                   (Set.insert (-1) $ Set.insert (-2) $ collectIds e) + 1
+        the_id2 = the_id1 + 1
+        
+
+        (Exp e_real) = f (var the_id1) (var the_id2) 
+        in Expr $ Lam the_id1 $ Expr $ Lam the_id2 e_real
+
+
+    
 
 --Shape is now entirely a front end thing
 instance Expable (Shape '[]) where
@@ -130,10 +151,19 @@ instance (Expable (Shape b), Expable a) => Expable (Shape (a ': b)) where
 instance Expable a => Expable (I a) where
   toExp (IIndex i)   = Expr $ S.IIndex (toExp i)
   toExp (IRange i j) = Expr $ S.IRange (toExp i) (toExp j)
-  toExp  IAll        = Expr $ S.IAll 
-  
-         
-        
+  toExp  IAll        = Expr $ S.IAll
+
+
+instance (Expable a, Expable b) => Expable (a,b) where
+  toExp (a,b) = Expr $ Tuple [toExp a, toExp b]
+
+instance (Expable a, Expable b, Expable c) => Expable (a,b,c) where
+  toExp (a,b,c) = Expr $ Tuple [toExp a, toExp b, toExp c]
+
+
+emb :: Expable a => a -> Exp a 
+emb a = Exp . toExp $ a 
+
 -- ------------------------------------------------------------
 -- Num 
 -- ------------------------------------------------------------

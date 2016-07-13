@@ -36,6 +36,9 @@ data Exp = -- Annotated with what "top-level" types these would have
            -- :: Tune Int, Tune Bool 
          | TuneParam TP  -- tuning parameters
 
+           -- Tuples :: (Int,Float) , (Array Int, Bool) ... 
+         | Tuple [Exp]
+
            -- :: a -> b, a -> b -> c ... 
          | Op Op [Exp]
 

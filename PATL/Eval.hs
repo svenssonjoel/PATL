@@ -21,11 +21,10 @@ import Control.Monad.State
 -- Evaluation
 
 type EvalShape = [EvalResult]
---snoclist :: a -> [a] -> [a]
---snoclist a (xs) = reverse (a : (reverse xs))
 
 -- Clean this up later
 data EvalResult = Scalar Value
+                | Tup    [EvalResult]
                 | Array  EvalShape (V.Vector (EvalResult))
                 | Shap   EvalShape  -- Better constr names! (maybe prefix Eval_)
                 | Tuning TP
@@ -62,6 +61,11 @@ eval e = evalState (doEval e) emptyEnv
       -- constant values. 
 
       TuneParam t -> return $ Tuning t
+
+      -- Evaluate tuples
+      Tuple es -> do
+        es' <- mapM doEval es 
+        return $ Tup es'
 
       -- Evaluate Lam to haskell functions 
       Lam ident e ->
