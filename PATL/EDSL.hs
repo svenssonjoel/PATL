@@ -160,6 +160,11 @@ instance (Expable a, Expable b) => Expable (a,b) where
 instance (Expable a, Expable b, Expable c) => Expable (a,b,c) where
   toExp (a,b,c) = Expr $ Tuple [toExp a, toExp b, toExp c]
 
+instance Expable Int where
+  toExp i = Expr $ Constant (VInt i)
+
+instance Expable Float where
+  toExp f = Expr $ Constant (VFloat f)
 
 emb :: Expable a => a -> Exp a 
 emb a = Exp . toExp $ a 
