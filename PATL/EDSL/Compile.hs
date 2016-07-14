@@ -99,12 +99,30 @@ graphToAST (Graph edges root) = evalState ( doIt root ) M.empty
                      dv   = zip done [s1,s2] -- indicates which should be introduced here            
                  fmap Just $ bindMissing dv (\[e1,e2] -> A.App e1 e2)
                    -- pattern match here will lead to ugly error if broken
+            (Map s1 s2) -> 
+              do bound <- get               
+                 let done = map (\nodid -> M.lookup nodid bound) [s1,s2] :: [Maybe A.Exp]
+                     dv   = zip done [s1,s2] -- indicates which should be introduced here            
+                 fmap Just $ bindMissing dv (\[e1,e2] -> A.Map e1 e2)
+                   -- pattern match here will lead to ugly error if broken
+            (Generate s1 s2) -> 
+              do bound <- get               
+                 let done = map (\nodid -> M.lookup nodid bound) [s1,s2] :: [Maybe A.Exp]
+                     dv   = zip done [s1,s2] -- indicates which should be introduced here            
+                 fmap Just $ bindMissing dv (\[e1,e2] -> A.Generate e1 e2)
+                   -- pattern match here will lead to ugly error if broken
 
             (Reduce s1 s2 s3) -> 
               do bound <- get               
                  let done = map (\nodid -> M.lookup nodid bound) [s1,s2,s3] :: [Maybe A.Exp]
                      dv   = zip done [s1,s2,s3] -- indicates which should be introduced here            
                  fmap Just $ bindMissing dv (\[e1,e2,e3] -> A.Reduce e1 e2 e3)
+                   -- pattern match here will lead to ugly error if broken
+            (ZipWith s1 s2 s3) -> 
+              do bound <- get               
+                 let done = map (\nodid -> M.lookup nodid bound) [s1,s2,s3] :: [Maybe A.Exp]
+                     dv   = zip done [s1,s2,s3] -- indicates which should be introduced here            
+                 fmap Just $ bindMissing dv (\[e1,e2,e3] -> A.ZipWith e1 e2 e3)
                    -- pattern match here will lead to ugly error if broken
             (Iota s) -> 
               do bound <- get               
@@ -151,6 +169,7 @@ graphToAST (Graph edges root) = evalState ( doIt root ) M.empty
         shouldLet (A.Z)           = False
         shouldLet (A.TuneParam _) = False
         shouldLet (A.IAll)        = False
+        shouldLet (A.Cons _ _)    = False
         shouldLet a               = True 
 
   
