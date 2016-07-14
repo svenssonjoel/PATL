@@ -2,7 +2,12 @@
 module PATL.TuneParam where
 
 
--- Tuning parameters and blocking descriptors
-data TP = TPInt
+-- Tuning parameters
+
+data TP = TPIntRange Int Int 
         | TPBool
+        | NumCores
+        | SIMDWidth 
+        | CacheSize
+        | CacheLineSize 
           deriving (Eq, Show)

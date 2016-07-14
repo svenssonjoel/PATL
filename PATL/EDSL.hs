@@ -57,8 +57,8 @@ iota sh = liftSE $ Iota (toExp sh)
 -- A tuning parameter of type Int
 -- TODO: Make sure we can detect sharing of these!
 --       I suspect they may always be inlined 
-tInt :: Exp Int 
-tInt = liftSE $ TuneParam TPInt 
+tInt :: Int -> Int -> Exp Int 
+tInt i j = liftSE $ TuneParam (TPIntRange i j)
 
 -- Extract row and column from 2d array 
 extract_row :: Exp (Array '[Exp Int,Exp Int] (Exp a))
