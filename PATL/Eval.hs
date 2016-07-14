@@ -119,9 +119,6 @@ eval e = evalState (doEval e) emptyEnv
       -- Project out of container
       Prj e idx -> undefined
 
-      Block bkng e -> undefined 
-      UnBlock e -> undefined 
-
       -- SizeOf can return either a scalar or a shape. 
       SizeOf e ->
         do e' <- doEval e

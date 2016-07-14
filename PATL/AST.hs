@@ -65,15 +65,6 @@ data Exp = -- Annotated with what "top-level" types these would have
            -- Maybe also Prj :: sh -> Index -> Exp 
          | Prj Exp Exp 
 
-           -- SKETCHING
-
-           -- Block :: Blocking -> Array sh a -> Array sh (Array sh' a) 
-         | Block Blocking Exp -- Can be implemented by Generate + Prj (IRange)
-
-           -- UnBlock :: Array sh (Array sh' a) -> Array sh'' a 
-         | UnBlock Exp        -- Need some concat-like functionality
-
-
            -- Size of Exp (array or scalar)
            -- SizeOf :: Array sh a -> sh
            -- SizeOf :: Int, Float -> Int
@@ -108,15 +99,7 @@ data Exp = -- Annotated with what "top-level" types these would have
            -- | Scan 
            
            deriving (Eq, Show)
-                    
--- Need to change the way to express blocking (maybe using projections
--- and Generates) 
-data Blocking = Square Exp
-              | Rectangular Exp Exp
-              | Chunk Exp 
-                deriving (Eq, Show)
-
-
+                   
 ------------------------------------------------------------
 -- Examples
 myArray :: Exp
