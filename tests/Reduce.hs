@@ -26,6 +26,13 @@ showGraph = do
   gr <- genGraph (unExp sumIt)
   putStrLn $ show gr
 
+
+showAST = do
+  gr <- genGraph (unExp sumIt)
+  case graphToAST gr of
+    Nothing -> putStrLn "NO AST"
+    Just a  -> putStrLn $ show a 
+
 --showAnGraph = do
 --  gr <- genGraph (unExp sumIt)
 --  let (UsageGraph agr root) = anUsage gr
@@ -38,9 +45,9 @@ main = do
   putStrLn "\n\n"
   putStrLn "**** Graph ****" 
   showGraph 
- -- putStrLn "\n\n"
- -- putStrLn "**** Usage annotated Graph ****"
- -- showAnGraph
+  putStrLn "\n\n"
+  putStrLn "**** AST ****"
+  showAST
 
 
 -- let apa = [(1,(Reduce 2 7 8,fromList [2,3,4,7,8,9,10,11]))
