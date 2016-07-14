@@ -16,11 +16,17 @@ import qualified Data.Map as M
 -- import qualified Data.Set as Set
 
 import Control.Monad.State
+import System.IO.Unsafe 
 
 
--- This is the end goal
---compile :: E.Exp a -> A.Exp
---compile = undefined 
+-- This is the end goal (Or have it result in a Maybe A.Exp) 
+compile :: Exp a -> A.Exp
+compile e = let gr = unsafePerformIO $ genGraph (unExp e)
+            in
+              case graphToAST gr of
+              Nothing -> error "Unable to convert to backend expression"
+              Just e' -> e'
+
 
 -- TODO: Detect sharing and establish Lets
 
