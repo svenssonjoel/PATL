@@ -10,4 +10,4 @@ import PATL.AST
 -------------------------------------------------------
 -- Compilation
 --
---  TODO: Fusion of patterns (Separate module ?) 
+--  TODO: Fusion of patterns 

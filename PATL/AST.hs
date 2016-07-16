@@ -16,6 +16,10 @@ type Size = Exp
 
 type Identifier = String
 
+data Def = Def Identifier Exp 
+
+type Program = [Def] -- Top level program 
+
 -- TODO: Should there be Tuples? (I think yes) 
 data Exp = -- Annotated with what "top-level" types these would have
            -- (in whatever language we present to user)
@@ -99,17 +103,29 @@ data Exp = -- Annotated with what "top-level" types these would have
            -- | Scan 
            
            deriving (Eq, Show)
+
+
+foldExp :: ( a -> Exp -> a) -> a -> Exp -> a
+foldExp f a e = doIt a e
+  where 
+    doIt a e@(IIndex e1) = f (doIt a e1) e 
+    doIt a e@(IRange e1 e2) = f (foldl doIt a [e1,e2]) e 
+    doIt a e@(Tuple es) = f (foldl doIt a es) e
+    -- Todo Finish 
+    
+    doIt a e = f a e
+  
                    
 ------------------------------------------------------------
 -- Examples
-myArray :: Exp
-myArray = Iota (Cons (Constant (VInt 100)) Z)
+-- myArray :: Exp
+-- myArray = Iota (Cons (Constant (VInt 100)) Z)
 
-myFun :: Exp
-myFun = Lam "a" (Op Add [(Var "a"),(Constant (VInt 1))])
+-- myFun :: Exp
+-- myFun = Lam "a" (Op Add [(Var "a"),(Constant (VInt 1))])
 
-myPrg :: Exp
-myPrg = Map myFun myArray
+-- myPrg :: Exp
+-- myPrg = Map myFun myArray
                  
 
 ------------------------------------------------------------

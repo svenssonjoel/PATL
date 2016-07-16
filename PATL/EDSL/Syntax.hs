@@ -56,21 +56,21 @@ foldExpr :: (a -> Expr -> a) -> a -> Expr -> a
 foldExpr f a (Expr e) = fse (\i j -> f i (Expr j))  a e 
   where
     fse :: (a -> Syntax Expr -> a) -> a -> Syntax Expr -> a
-    fse f a e@(Tuple es) = f (foldl f a (P.map syntax es)) e
-    fse f a e@(Sh (shp)) = fse f a (syntax shp)
-    fse f a e@(Ix (idx)) = fse f a (syntax idx)
-    fse f a e@(IIndex s) = f (f a (syntax s)) e 
-    fse f a e@(IRange s1 s2) = f (foldl f a (P.map syntax [s1,s2])) e
-    fse f a e@(Op _ es)  = f (foldl f a (P.map syntax es)) e
-    fse f a e@(Lam id s) = f (f a (syntax s)) e
-    fse f a e@(App s1 s2) = f (foldl f a (P.map syntax [s1,s2])) e
-    fse f a e@(Iota s)  = f (f a (syntax s)) e
-    fse f a e@(Prj s1 s2) = f (foldl f a (P.map syntax [s1,s2])) e
-    fse f a e@(SizeOf s) = f (f a (syntax s)) e
-    fse f a e@(Generate s1 s2) = f (foldl f a (P.map syntax [s1,s2])) e
-    fse f a e@(Map s1 s2) = f (foldl f a (P.map syntax [s1,s2])) e
-    fse f a e@(ZipWith s1 s2 s3) = f (foldl f a (P.map syntax [s1,s2,s3])) e
-    fse f a e@(Reduce s1 s2 s3) = f (foldl f a (P.map syntax [s1,s2,s3])) e
+    fse f a e@(Tuple es) = f (foldl (fse f) a (P.map syntax es)) e
+    fse f a e@(Sh (shp)) = f (fse f a (syntax shp)) e 
+    fse f a e@(Ix (idx)) = f (fse f a (syntax idx)) e
+    fse f a e@(IIndex s) = f ((fse f) a (syntax s)) e 
+    fse f a e@(IRange s1 s2) = f (foldl (fse f) a (P.map syntax [s1,s2])) e
+    fse f a e@(Op _ es)  = f (foldl (fse f) a (P.map syntax es)) e
+    fse f a e@(Lam id s) = f ((fse f) a (syntax s)) e
+    fse f a e@(App s1 s2) = f (foldl (fse f) a (P.map syntax [s1,s2])) e
+    fse f a e@(Iota s)  = f ((fse f) a (syntax s)) e
+    fse f a e@(Prj s1 s2) = f (foldl (fse f) a (P.map syntax [s1,s2])) e
+    fse f a e@(SizeOf s) = f ((fse f) a (syntax s)) e
+    fse f a e@(Generate s1 s2) = f (foldl (fse f) a (P.map syntax [s1,s2])) e
+    fse f a e@(Map s1 s2) = f (foldl (fse f) a (P.map syntax [s1,s2])) e
+    fse f a e@(ZipWith s1 s2 s3) = f (foldl (fse f) a (P.map syntax [s1,s2,s3])) e
+    fse f a e@(Reduce s1 s2 s3) = f (foldl (fse f) a (P.map syntax [s1,s2,s3])) e
     fse f a e = f a e -- nonrecursive cases 
 
 -- Collect identifier 
