@@ -6,6 +6,7 @@ import PATL.EDSL
 import PATL.EDSL.Syntax hiding (Z) 
 import PATL.EDSL.Shape
 import PATL.EDSL.Compile
+import qualified PATL.AST as AST
 
 
 
@@ -13,8 +14,8 @@ import PATL.EDSL.Compile
 
 -- Sum 0 to 1000
 
-sumIt :: Exp Int 
-sumIt = reduce (emb (+)) 0 (iota (emb (1000:.Z :: Shape '[Exp Int])))
+sumIt :: Exp Int
+sumIt = reduce (emb (+)) tp (iota (emb (1000:.Z :: Shape '[Exp Int])))
           -- shape annotation currently required
 
 
@@ -31,7 +32,16 @@ showAST = do
   gr <- genGraph (unExp sumIt)
   case graphToAST gr of
     Nothing -> putStrLn "NO AST"
-    Just a  -> putStrLn $ show a 
+    Just a  -> putStrLn $ show a
+
+
+showTP = do
+  gr <- genGraph (unExp sumIt)
+  case graphToAST gr of
+    Nothing -> putStrLn "NO AST"
+    Just a  -> let (_,m) = AST.extractTuneParams a
+               in putStrLn $ show m
+ 
 
 --showAnGraph = do
 --  gr <- genGraph (unExp sumIt)
@@ -48,6 +58,10 @@ main = do
   putStrLn "\n\n"
   putStrLn "**** AST ****"
   showAST
+  putStrLn "\n\n"
+  putStrLn "**** extracted TP ****"
+  showTP
+
 
 
 -- let apa = [(1,(Reduce 2 7 8,fromList [2,3,4,7,8,9,10,11]))

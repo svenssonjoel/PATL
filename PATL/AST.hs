@@ -145,19 +145,30 @@ addTP tp = do
 -- extract tuning parameters
 -- replace in AST with a variable
 -- This may be something like "traverse" 
-extractTuneParams :: Exp -> MS Exp  
+extractTuneParams :: Exp -> (Exp, M.Map Identifier TP)  
 
-extractTuneParams = doIt
+extractTuneParams e = let (a,(m,i)) = runState (doIt e) (M.empty,0)
+                      in  (a,m) 
   where
-    doIt e@(TuneParam tp) =
+    doIt :: Exp -> MS Exp 
+    doIt (TuneParam tp) =
       do ident <- addTP tp
          return (Var ident)
-    doIt e@(IIndex e1) =
-      IIndex <$> (doIt e1)
-    doIt e@(IRange e1 e2) =
-      IRange <$> doIt e1 <*> doIt e2
-    doIt e@(Tuple es) =
-      Tuple <$> mapM doIt es
+    doIt (IIndex e1) =  IIndex <$> (doIt e1)
+    doIt (IRange e1 e2) = IRange <$> doIt e1 <*> doIt e2
+    doIt (Tuple es) = Tuple <$> mapM doIt es
+    doIt (Op op es) = Op op <$> mapM doIt es
+    doIt (Lam ident e1) = Lam ident <$> doIt e1
+    doIt (App e1 e2) = App <$> doIt e1 <*> doIt e2
+    doIt (Let ident e1 e2) = Let ident <$> doIt e1 <*> doIt e2
+    doIt (Iota e1) = Iota <$> doIt e1
+    doIt (Prj e1 e2) = Prj <$> doIt e1 <*> doIt e2
+    doIt (SizeOf e1) = SizeOf <$> doIt e1
+    doIt (Generate e1 e2) = Generate <$> doIt e1 <*> doIt e2
+    doIt (Map e1 e2) = Map <$> doIt e1 <*> doIt e2
+    doIt (ZipWith e1 e2 e3) = ZipWith <$> doIt e1 <*> doIt e2 <*> doIt e3
+    doIt (Reduce e1 e2 e3) = Reduce <$> doIt e1 <*> doIt e2 <*> doIt e3 
+     
 -- non recursive cases 
     doIt  e = return e  
 
