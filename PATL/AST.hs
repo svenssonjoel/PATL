@@ -10,6 +10,9 @@ import PATL.Value
 import PATL.TuneParam
 import PATL.Operators
 
+import qualified Data.Map as M
+import Control.Monad.State 
+
 type Size = Exp 
 
 {- The Language -} 
@@ -20,9 +23,8 @@ data Def = Def Identifier Exp
 
 type Program = [Def] -- Top level program 
 
--- TODO: Should there be Tuples? (I think yes) 
-data Exp = -- Annotated with what "top-level" types these would have
-           -- (in whatever language we present to user)
+data Exp = -- Annotated with "top-level" types
+           
           
            --  :: Int , Float  for example 
            Constant Value
@@ -111,11 +113,58 @@ foldExp f a e = doIt a e
     doIt a e@(IIndex e1) = f (doIt a e1) e 
     doIt a e@(IRange e1 e2) = f (foldl doIt a [e1,e2]) e 
     doIt a e@(Tuple es) = f (foldl doIt a es) e
-    -- Todo Finish 
-    
+    doIt a e@(Op _ es)  = f (foldl doIt a es) e
+    doIt a e@(Lam _ e1)  = f (doIt a e1) e
+    doIt a e@(App e1 e2) = f (foldl doIt a [e1,e2]) e
+    doIt a e@(Let _ e1 e2) = f (foldl doIt a [e1,e2]) e
+    doIt a e@(Iota e1) = f (doIt a e1) e
+    doIt a e@(Prj e1 e2) = f (foldl doIt a [e1,e2]) e
+    doIt a e@(SizeOf e1) = f (doIt a e1) e
+    doIt a e@(Generate e1 e2) = f (foldl doIt a [e1,e2]) e
+    doIt a e@(Map e1 e2) = f (foldl doIt a [e1,e2]) e
+    doIt a e@(ZipWith e1 e2 e3) = f (foldl doIt a [e1,e2,e3]) e
+    doIt a e@(Reduce e1 e2 e3) = f (foldl doIt a [e1,e2,e3]) e 
     doIt a e = f a e
+
+
+
+-- -------------------------------------------------------
+-- Extraction of tuning parameters
+-- -------------------------------------------------------
+
+type MS a = State (M.Map Identifier TP, Int) a
+
+addTP :: TP -> MS Identifier   
+addTP tp = do
+  (m,i) <- get
+  let ident = "tp" ++ show i
+      m' = M.insert ident tp m
+  put (m',i+1)
+  return ident 
   
-                   
+-- extract tuning parameters
+-- replace in AST with a variable
+-- This may be something like "traverse" 
+extractTuneParams :: Exp -> MS Exp  
+
+extractTuneParams = doIt
+  where
+    doIt e@(TuneParam tp) =
+      do ident <- addTP tp
+         return (Var ident)
+    doIt e@(IIndex e1) =
+      IIndex <$> (doIt e1)
+    doIt e@(IRange e1 e2) =
+      IRange <$> doIt e1 <*> doIt e2
+    doIt e@(Tuple es) =
+      Tuple <$> mapM doIt es
+-- non recursive cases 
+    doIt  e = return e  
+
+
+
+
+  
 ------------------------------------------------------------
 -- Examples
 -- myArray :: Exp
