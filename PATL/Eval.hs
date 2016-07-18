@@ -267,8 +267,10 @@ eval env e = evalState (doEval e) env
 
 --       Shape         Scalar        Index 
 toIdx :: EvalResult -> EvalResult -> EvalResult
-toIdx shp scal = undefined
+toIdx (Shap sh) (Scalar s) = undefined 
+toIdx _ _ = error "toIdx: error!" 
 
 --         Shape             Index      Scalar
 fromIdx :: EvalResult -> EvalResult -> EvalResult
-fromIdx shp idx = undefined 
+fromIdx (Shap sh) (Idx ix) = undefined
+fromIdx _ _ = error "fromIdx: error!"
