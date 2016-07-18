@@ -258,5 +258,17 @@ eval env e = evalState (doEval e) env
 
    
     
-      
 
+
+
+-- -------------------------------------------------------
+-- toIdx, fromIdx 
+-- -------------------------------------------------------
+
+--       Shape         Scalar        Index 
+toIdx :: EvalResult -> EvalResult -> EvalResult
+toIdx shp scal = undefined
+
+--         Shape             Index      Scalar
+fromIdx :: EvalResult -> EvalResult -> EvalResult
+fromIdx shp idx = undefined 
