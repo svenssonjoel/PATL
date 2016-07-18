@@ -27,7 +27,7 @@ data EvalResult = Scalar Value
                 | Tup    [EvalResult]
                 | Array  EvalShape (V.Vector (EvalResult))
                 | Shap   EvalShape  -- Better constr names! (maybe prefix Eval_)
-                | Tuning TP
+             --   | Tuning TP
                 | Function (EvalResult -> EvalResult)
 
 
@@ -37,8 +37,8 @@ emptyEnv = M.empty
 
 type E a = State Env a
 
-eval :: Exp -> EvalResult
-eval e = evalState (doEval e) emptyEnv 
+eval :: Env -> Exp -> EvalResult
+eval env e = evalState (doEval e) env 
   where
     doEval :: Exp -> E EvalResult 
     doEval e =
@@ -54,13 +54,11 @@ eval e = evalState (doEval e) emptyEnv
 
 
       -- ------------------------------
-      -- Evaluate tuning parameter...
-      -- This should return an integer constant.
-      -- Or it should create a new variable and add
-      -- to some list of such variables for later binding to
-      -- constant values. 
+      -- Tuning parameters should have been
+      -- removed before evaluation.
+      -- extractTuneParams replaces these with variables.
 
-      TuneParam t -> return $ Tuning t
+      TuneParam t -> error $ "Tuning parameter present at eval" 
 
       -- Evaluate tuples
       Tuple es -> do
