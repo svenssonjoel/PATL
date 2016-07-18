@@ -5,7 +5,7 @@ module PATL.Eval where
 
 import PATL.AST
 import qualified PATL.EDSL.Shape as S -- TODO: This is unfortunate, fix it! 
-import PATL.EDSL.Shape hiding (Z)
+import PATL.EDSL.Shape hiding (Z,IAll,IIndex,IRange)
 
 import PATL.Value
 import PATL.Operators
@@ -27,7 +27,10 @@ data EvalResult = Scalar Value
                 | Tup    [EvalResult]
                 | Array  EvalShape (V.Vector (EvalResult))
                 | Shap   EvalShape  -- Better constr names! (maybe prefix Eval_)
-             --   | Tuning TP
+                | Idx    EvalShape
+                | Idx_IAll
+                | Idx_IIndex EvalResult
+                | Idx_IRange EvalResult EvalResult
                 | Function (EvalResult -> EvalResult)
 
 
@@ -51,7 +54,6 @@ eval env e = evalState (doEval e) env
            case M.lookup ident env of
              Nothing -> error "Environment malfunction"
              Just v  -> return v
-
 
       -- ------------------------------
       -- Tuning parameters should have been
@@ -96,7 +98,9 @@ eval env e = evalState (doEval e) env
         ext <- evalExtents shape 
         return $ Shap ext
 
-      Ix shape -> error "NOT IMPLEMENTED" 
+      Ix shape -> do
+        idx <- evalIndex shape
+        return $ Idx idx 
 
       -- Let bindings. Extends the environment
       Let ident e1 e2 ->
@@ -115,6 +119,7 @@ eval env e = evalState (doEval e) env
    
 
       -- Project out of container
+      -- This one is scary 
       Prj e idx -> undefined
 
       -- SizeOf can return either a scalar or a shape. 
@@ -126,7 +131,18 @@ eval env e = evalState (doEval e) env
 
 
       -- PATTERNS
-      Generate exts e -> undefined
+      -- TODO: FINISH IMPLEMENTING THIS 
+      Generate exts fun ->
+        do exts' <- doEval exts
+           fun' <- doEval fun 
+           case exts' of
+             (Shap sh) ->
+               do
+                 let elems = sizeExtents sh
+                 return $ Array sh undefined -- (V.generate size (\i -> (Scalar (VInt i))))
+           
+             _ -> error "First argument to Generate must be a shape"
+           
 
 
       Map fun e ->
@@ -179,15 +195,13 @@ eval env e = evalState (doEval e) env
              (Array sh v) ->
                case sh of
                  [] ->  return $ Array sh v
-                 [x] -> return $ Array [] (V.singleton $ V.foldr
+                 -- any other shape, reduce array to a single value 
+                 _ -> return $ Array [] (V.singleton $ V.foldr
                                            (\x y -> let Function f' = f x in f y) e_id' v)
-                 _ -> error "NOT SUPPORTED"
+                 -- _ -> error "NOT SUPPORTED"
              _ -> error "Argument to reduce is not an Array" 
     
-                                                 
-           
-
-
+                                                
     appNotAFun = error "First argument of App is not a function"
 
     evalIota :: EvalShape -> E EvalResult
@@ -195,6 +209,22 @@ eval env e = evalState (doEval e) env
       do --shape <- evalExtents e
          let  size  = sizeExtents sh
          return $ Array sh (V.generate size (\i -> (Scalar (VInt i))))
+
+    evalIndex :: Exp -> E EvalShape
+    evalIndex Z = return []
+    evalIndex (Cons idx e) =
+      do
+        e' <- evalIndex e
+        case idx of
+          IAll -> return $ Idx_IAll : e' 
+          IIndex i -> do
+            i' <- doEval i
+            return $ (Idx_IIndex i') : e'
+          IRange i j -> do
+            i' <- doEval i
+            j' <- doEval j
+            return $ (Idx_IRange i' j') : e'
+          _ -> error "Invalid Index"
 
     evalExtents :: Exp -> E EvalShape
     evalExtents Z = return [] 
