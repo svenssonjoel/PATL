@@ -104,7 +104,7 @@ eval env e = evalState (doEval e) env
 
       Ix shape -> do
         idx <- evalIndex shape
-        return $ Idx idx 
+        return $ Idx idx
 
       -- Let bindings. Extends the environment
       Let ident e1 e2 ->
@@ -116,10 +116,9 @@ eval env e = evalState (doEval e) env
 
       -- Iota. Shape to array 
       Iota extents -> do
-        extents' <- doEval extents
-        case extents' of
-          (Shap e) -> evalIota e
-          _ -> error "Argument to Iota must be a shape" 
+        extents' <- evalExtents extents
+        evalIota extents' -- hmm
+        
    
 
       -- Project out of container
@@ -202,10 +201,10 @@ eval env e = evalState (doEval e) env
                  [] ->  return $ Array sh v
                  -- any other shape, reduce array to a single value 
                  _ -> return $ Array [] (V.singleton $ V.foldr
-                                           (\x y -> let Function f' = f x in f y) e_id' v)
-                 -- _ -> error "NOT SUPPORTED"
+                                           (\x y -> let Function f' = f x in f' y) e_id' v)
+                
              _ -> error "Argument to reduce is not an Array" 
-    
+      a -> error $ show a 
                                                 
     appNotAFun = error "First argument of App is not a function"
 
@@ -217,7 +216,7 @@ eval env e = evalState (doEval e) env
 
     evalIndex :: Exp -> E EvalShape
     evalIndex Z = return []
-    evalIndex (Cons idx e) =
+    evalIndex (Cons idx e) = -- TODO: probably wrong here
       do
         e' <- evalIndex e
         case idx of
@@ -233,7 +232,7 @@ eval env e = evalState (doEval e) env
 
     evalExtents :: Exp -> E EvalShape
     evalExtents Z = return [] 
-    evalExtents (Cons sh e) =
+    evalExtents (Cons e sh) =
       do sh' <- evalExtents sh
          e' <- doEval e
          return $  e' : sh'
