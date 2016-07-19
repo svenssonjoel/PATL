@@ -12,7 +12,7 @@ import PATL.Eval
 
 
 
--- Sum 0 to 1000
+-- Sum 0 to 1000 (not including 1000) 
 
 sumIt :: Exp Int
 sumIt = reduce (emb (+)) 0 (iota (emb (10:.100:.Z :: Shape '[Exp Int,Exp Int])))
