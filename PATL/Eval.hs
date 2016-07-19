@@ -138,12 +138,12 @@ eval env e = evalState (doEval e) env
       -- TODO: FINISH IMPLEMENTING THIS 
       Generate exts fun ->
         do exts' <- doEval exts
-           fun' <- doEval fun 
+           (Function fun') <- doEval fun 
            case exts' of
              (Shap sh) ->
                do
                  let elems = sizeExtents sh
-                 return $ Array sh undefined -- (V.generate size (\i -> (Scalar (VInt i))))
+                 return $ Array sh (V.generate elems (\i -> fun' (fromScalarIdx (Shap sh) (Scalar (VInt i)))))
            
              _ -> error "First argument to Generate must be a shape"
            
