@@ -16,6 +16,7 @@ import qualified Data.Map as M
 
 import Control.Monad.State 
 
+import Text.Show.Functions 
 
 ------------------------------------------------------------
 -- Evaluation
@@ -28,10 +29,13 @@ data EvalResult = Scalar Value
                 | Array  EvalShape (V.Vector (EvalResult))
                 | Shap   EvalShape  -- Better constr names! (maybe prefix Eval_)
                 | Idx    EvalShape
+                 
                 | Idx_IAll
                 | Idx_IIndex EvalResult
                 | Idx_IRange EvalResult EvalResult
                 | Function (EvalResult -> EvalResult)
+                deriving (Show) 
+
 
 
 type Env = M.Map Identifier EvalResult --what about functions ?
@@ -265,12 +269,26 @@ eval env e = evalState (doEval e) env
 -- toIdx, fromIdx 
 -- -------------------------------------------------------
 
---       Shape         Scalar        Index 
-toIdx :: EvalResult -> EvalResult -> EvalResult
-toIdx (Shap sh) (Scalar s) = undefined 
-toIdx _ _ = error "toIdx: error!" 
+--       Shape         Shaped Index   Scalar 
+toScalarIdx :: EvalResult -> EvalResult -> EvalResult
+toScalarIdx (Shap sh) (Idx ix) = toIdx' sh ix
+  where
+    toIdx' [] [] = Scalar (VInt 0)
+    toIdx' (Scalar (VInt s):ss) (Scalar (VInt i):is) =
+      let (Scalar (VInt r)) = toIdx' ss is
+      in  Scalar (VInt (r * s + i))
+    
+toScalarIdx _ _ = error "toIdx: error!" 
 
---         Shape             Index      Scalar
-fromIdx :: EvalResult -> EvalResult -> EvalResult
-fromIdx (Shap sh) (Idx ix) = undefined
+--         Shape             Scalar     (Shaped Index) 
+fromScalarIdx :: EvalResult -> EvalResult -> EvalResult
+fromScalarIdx (Shap sh) ix = Idx (fromIdx' sh ix)
+  where
+    --       Z  _
+    -- lots of potential unmatched cases here ! 
+    fromIdx' [] _  = []
+    fromIdx' [Scalar (VInt x)] (Scalar (VInt i)) = [Scalar (VInt i)]
+    fromIdx' (Scalar (VInt x):xs) (Scalar (VInt i)) =  (Scalar (VInt (i `rem` x)) :
+                                          (fromIdx' xs (Scalar (VInt (i `quot` x)))))
 fromIdx _ _ = error "fromIdx: error!"
+              
