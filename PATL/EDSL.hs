@@ -26,8 +26,8 @@ data Array (sh :: [*]) a
 -- ------------------------------------------------------------
 
 generate :: Exp (Shape sh)
-         -> Exp (Index sh -> Exp a)
-         -> Exp (Array sh a)
+         -> Exp (Exp (Index sh) -> Exp a)
+         -> Exp (Array sh (Exp a))
 generate sh f =  liftSE $ Generate (toExp sh) (toExp f) 
                                   
 map :: Exp (Exp a -> Exp b) 

@@ -136,16 +136,13 @@ eval env e = evalState (doEval e) env
       -- PATTERNS
       -- TODO: FINISH IMPLEMENTING THIS 
       Generate exts fun ->
-        do exts' <- doEval exts
+        do exts' <- evalExtents exts
            (Function fun') <- doEval fun 
-           case exts' of
-             (Shap sh) ->
-               do
-                 let elems = sizeExtents sh
-                 return $ Array sh (V.generate elems
-                                    (\i -> fun' (fromScalarIdx (Shap sh) (Scalar (VInt i)))))
+           let elems = sizeExtents exts'
+           return $ Array exts' (V.generate elems
+                              (\i -> fun' (fromScalarIdx (Shap exts') (Scalar (VInt i)))))
            
-             _ -> error "First argument to Generate must be a shape"
+
            
 
 
@@ -190,7 +187,8 @@ eval env e = evalState (doEval e) env
       -- It is then up to the programmer to "block" up the data into
       -- chunks before (map reduce) on the blocked structure, if some
       -- other reduction is desired. 
-      
+
+      -- Reduce now produces scalar 
       Reduce fun e_id e ->
         do e'    <- doEval e
            e_id' <- doEval e_id 
@@ -198,10 +196,13 @@ eval env e = evalState (doEval e) env
            case e' of
              (Array sh v) ->
                case sh of
-                 [] ->  return $ Array sh v
+                 [] ->  return $ v V.! 0 --    Array sh v
                  -- any other shape, reduce array to a single value 
-                 _ -> return $ Array [] (V.singleton $ V.foldr
-                                           (\x y -> let Function f' = f x in f' y) e_id' v)
+                 _ -> return $ V.foldr (\x y -> let Function f' = f x in f' y) e_id' v
+--                 [] ->  return $ Array sh v
+                 -- any other shape, reduce array to a single value 
+--                 _ -> return $ Array [] (V.singleton $ V.foldr
+--                                         (\x y -> let Function f' = f x in f' y) e_id' v)
                 
              _ -> error "Argument to reduce is not an Array" 
       a -> error $ show a 
@@ -259,6 +260,7 @@ eval env e = evalState (doEval e) env
                Sub -> return $ Scalar (VFloat (f1 - f2))
                Mul -> return $ Scalar (VFloat (f1 * f2))
                Div -> return $ Scalar (VFloat (f1 / f2))
+           (a,b) -> error $ show a ++ " " ++ show op2 ++ " " ++ show b
 
    
     
