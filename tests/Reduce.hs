@@ -29,6 +29,13 @@ doIt = do
   putStrLn $ show gr
   putStrLn "\n\n"
 
+
+  putStrLn "**** uses ****" 
+  putStrLn $ show $ uses 1 gr
+  putStrLn $ show $ uses 8 gr
+  putStrLn $ show $ uses 12 gr
+  putStrLn "\n\n"
+
   
   case graphToAST gr of
     Nothing -> putStrLn "No AST"
