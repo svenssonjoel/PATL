@@ -24,7 +24,8 @@ data Syntax s = Constant Value
               | Tuple [s]
               | Sh s
               | Ix s
-              | Z | IAll | IIndex s | IRange s s | Cons s s 
+                -- I dont like this duplication. 
+              | ShapeZ | IndexZ | IAll | IIndex s | IRange s s | ShapeCons s s | IndexCons s s 
               | Op Op [s]
               | Lam Identifier s
               | App s s

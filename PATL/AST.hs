@@ -35,8 +35,9 @@ data Exp = -- Annotated with "top-level" types
            -- :: Shape Int
          | Sh Exp
          | Ix Exp   
-         | Z
-         | Cons Exp Exp
+         | ShapeZ | IndexZ
+         | ShapeCons Exp Exp
+         | IndexCons Exp Exp 
          | IAll | IIndex Exp | IRange Exp Exp 
 
            -- :: Tune Int, Tune Bool 
@@ -111,7 +112,9 @@ foldExp :: ( a -> Exp -> a) -> a -> Exp -> a
 foldExp f a e = doIt a e
   where 
     doIt a e@(IIndex e1) = f (doIt a e1) e 
-    doIt a e@(IRange e1 e2) = f (foldl doIt a [e1,e2]) e 
+    doIt a e@(IRange e1 e2) = f (foldl doIt a [e1,e2]) e
+    doIt a e@(ShapeCons e1 e2) = f (foldl doIt a [e1,e2]) e
+    doIt a e@(IndexCons e1 e2) = f (foldl doIt a [e1,e2]) e 
     doIt a e@(Tuple es) = f (foldl doIt a es) e
     doIt a e@(Op _ es)  = f (foldl doIt a es) e
     doIt a e@(Lam _ e1)  = f (doIt a e1) e

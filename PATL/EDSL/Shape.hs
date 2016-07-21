@@ -16,4 +16,4 @@ data I a = IIndex a
          | IAll 
 
 
-type Index a = Shape a
+newtype Index a = Index (Shape a)

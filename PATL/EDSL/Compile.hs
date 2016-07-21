@@ -49,6 +49,15 @@ genGraph = reifyGraph
 
 type G a = State (M.Map Unique A.Exp) a 
 
+-- TODO: This is not doing what it should
+-- TODO: Rewrite completely
+--      * At each node check what variables are used "below"
+--      * if variable is bound already ignore
+--      * if variable is not bound and used in more than one subtree
+--           Bind it here
+--      * if variable is not bound and used in one subtree postpone decision
+--      * if "var x" is struck and still not bound, replace with original
+--          expression
 graphToAST :: Graph Syntax -> Maybe A.Exp
 graphToAST (Graph edges root) = evalState ( doIt root ) M.empty 
   where
@@ -64,7 +73,8 @@ graphToAST (Graph edges root) = evalState ( doIt root ) M.empty
               --   bound <- get
               --   put (M.insert nid ast_node bound)
                  return $ Just ast_node
-            (Z) -> return $ Just A.Z
+            (ShapeZ) -> return $ Just A.ShapeZ
+            (IndexZ) -> return $ Just A.IndexZ
             -- These variables can only come from Lambdas in the EDSL!
             (Var (FunArg i)) -> do
               let ast_node = A.Var ("a" ++ show i) 
@@ -91,6 +101,7 @@ graphToAST (Graph edges root) = evalState ( doIt root ) M.empty
                  fmap Just $ bindMissing dv (A.Op op)
 
             -- Lambdas probably need special treatment!
+            -- TODO: This case is clearly incorrect
             (Lam (FunArg a) e) ->
               do e' <- doIt e
                  case e' of
@@ -136,11 +147,17 @@ graphToAST (Graph edges root) = evalState ( doIt root ) M.empty
                      dv   = zip done [s] -- indicates which should be introduced here            
                  fmap Just $ bindMissing dv (\[e] -> A.Iota e)
                    -- pattern match here will lead to ugly error if broken
-            (Cons s1 s2) -> 
+            (ShapeCons s1 s2) -> 
               do bound <- get               
                  let done = map (\nodid -> M.lookup nodid bound) [s1,s2] :: [Maybe A.Exp]
                      dv   = zip done [s1,s2] -- indicates which should be introduced here            
-                 fmap Just $ bindMissing dv (\[e1,e2] -> A.Cons e1 e2)
+                 fmap Just $ bindMissing dv (\[e1,e2] -> A.ShapeCons e1 e2)
+                   -- pattern match here will lead to ugly error if broken
+            (IndexCons s1 s2) -> 
+              do bound <- get               
+                 let done = map (\nodid -> M.lookup nodid bound) [s1,s2] :: [Maybe A.Exp]
+                     dv   = zip done [s1,s2] -- indicates which should be introduced here            
+                 fmap Just $ bindMissing dv (\[e1,e2] -> A.IndexCons e1 e2)
                    -- pattern match here will lead to ugly error if broken
             a -> error (show a)
                  
@@ -172,13 +189,15 @@ graphToAST (Graph edges root) = evalState ( doIt root ) M.empty
         --refine this 
         shouldLet (A.Constant _)  = False
         shouldLet (A.Var _)       = False
-        shouldLet (A.Z)           = False
+        shouldLet (A.IndexZ)      = False
+        shouldLet (A.ShapeZ)      = False
         shouldLet (A.TuneParam _) = False
         shouldLet (A.IAll)        = False
-        shouldLet (A.Cons _ _)    = False
-        shouldLet a               = True 
+        shouldLet (A.ShapeCons _ _)    = False
+        shouldLet (A.IndexCons _ _)    = False 
+        shouldLet a               = True
 
-  
+     
 
 
     

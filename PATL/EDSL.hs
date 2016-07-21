@@ -142,10 +142,10 @@ instance Expable (Exp a -> Exp b -> Exp c) where
 
 --Shape is now entirely a front end thing
 instance Expable (Shape '[]) where
-  toExp Z =  Expr S.Z
+  toExp Z =  Expr S.ShapeZ
 
 instance (Expable (Shape b), Expable a) => Expable (Shape (a ': b)) where
-  toExp (a:.b) = Expr $ S.Cons (toExp a) (toExp b) 
+  toExp (a:.b) = Expr $ S.ShapeCons (toExp a) (toExp b) 
          
 
 instance Expable a => Expable (I a) where

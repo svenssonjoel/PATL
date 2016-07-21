@@ -26,7 +26,7 @@ type EvalShape = [EvalResult]
 -- Clean this up later
 data EvalResult = Scalar Value
                 | Tup    [EvalResult]
-                | Array  EvalShape (V.Vector (EvalResult))
+                | Array  EvalResult (V.Vector (EvalResult))
                 | Shap   EvalShape  -- Better constr names! (maybe prefix Eval_)
                 | Idx    EvalShape
                  
@@ -56,7 +56,7 @@ eval env e = evalState (doEval e) env
       Var ident  ->
         do env <- get 
            case M.lookup ident env of
-             Nothing -> error "Environment malfunction"
+             Nothing -> error $ "Environment malfunction: " ++ show ident ++ "\n" ++ show env 
              Just v  -> return v
 
       -- ------------------------------
@@ -99,12 +99,12 @@ eval env e = evalState (doEval e) env
 
       -- SHAPES
       Sh shape -> do
-        ext <- evalExtents shape 
-        return $ Shap ext
+        doEval shape -- evalExtents shape 
+        -- return $ Shap ext
 
       Ix shape -> do
-        idx <- evalIndex shape
-        return $ Idx idx
+        doEval shape -- evalIndex shape
+        --return $ Idx idx
 
       -- Let bindings. Extends the environment
       Let ident e1 e2 ->
@@ -116,7 +116,7 @@ eval env e = evalState (doEval e) env
 
       -- Iota. Shape to array 
       Iota extents -> do
-        extents' <- evalExtents extents
+        extents' <- doEval extents -- evalExtents extents
         evalIota extents' -- hmm
         
    
@@ -130,17 +130,17 @@ eval env e = evalState (doEval e) env
         do e' <- doEval e
            case e' of
              Scalar _ -> return $ Scalar (VInt 1)
-             Array sh _ -> return $ Shap sh 
+             Array sh _ -> return $ sh 
 
 
       -- PATTERNS
       -- TODO: FINISH IMPLEMENTING THIS 
       Generate exts fun ->
-        do exts' <- evalExtents exts
+        do exts' <- doEval exts -- evalExtents exts
            (Function fun') <- doEval fun 
            let elems = sizeExtents exts'
            return $ Array exts' (V.generate elems
-                              (\i -> fun' (fromScalarIdx (Shap exts') (Scalar (VInt i)))))
+                              (\i -> fun' (fromScalarIdx exts' (Scalar (VInt i)))))
            
 
            
@@ -194,7 +194,7 @@ eval env e = evalState (doEval e) env
            e_id' <- doEval e_id 
            Function f <- doEval fun
            case e' of
-             (Array sh v) ->
+             (Array (Shap sh) v) ->
                case sh of
                  [] ->  return $ v V.! 0 --    Array sh v
                  -- any other shape, reduce array to a single value 
@@ -204,42 +204,66 @@ eval env e = evalState (doEval e) env
 --                 _ -> return $ Array [] (V.singleton $ V.foldr
 --                                         (\x y -> let Function f' = f x in f' y) e_id' v)
                 
-             _ -> error "Argument to reduce is not an Array" 
-      a -> error $ show a 
+             _ -> error "Argument to reduce is not an Array"
+
+-- Shape and index related
+      IAll -> return $ Idx_IAll 
+      IIndex i -> do
+        i' <- doEval i
+        return $ (Idx_IIndex i') 
+      IRange i j -> do
+        i' <- doEval i
+        j' <- doEval j
+        return $ (Idx_IRange i' j') 
+      ShapeZ -> return $ Shap []
+      IndexZ -> return $ Idx []
+      ShapeCons head tail -> do
+        head' <- doEval head
+        (Shap tail') <- doEval tail
+        return $ Shap (head' : tail') 
+      IndexCons head tail -> do
+        head' <- doEval head
+        (Idx tail') <- doEval tail
+        return $ Idx (head' : tail') 
+
+
+
+      --a -> error $ show a 
                                                 
     appNotAFun = error "First argument of App is not a function"
 
-    evalIota :: EvalShape -> E EvalResult
+    evalIota :: EvalResult -> E EvalResult
     evalIota sh =
       do --shape <- evalExtents e
          let  size  = sizeExtents sh
          return $ Array sh (V.generate size (\i -> (Scalar (VInt i))))
 
-    evalIndex :: Exp -> E EvalShape
-    evalIndex Z = return []
-    evalIndex (Cons idx e) = -- TODO: probably wrong here
-      do
-        e' <- evalIndex e
-        case idx of
-          IAll -> return $ Idx_IAll : e' 
-          IIndex i -> do
-            i' <- doEval i
-            return $ (Idx_IIndex i') : e'
-          IRange i j -> do
-            i' <- doEval i
-            j' <- doEval j
-            return $ (Idx_IRange i' j') : e'
-          _ -> error "Invalid Index"
+    -- evalIndex :: Exp -> E EvalShape
+    -- evalIndex Z = return []
+    -- evalIndex (Cons idx e) = -- TODO: probably wrong here
+    --   do
+    --     e' <- evalIndex e
+    --     case idx of
+    --       IAll -> return $ Idx_IAll : e' 
+    --       IIndex i -> do
+    --         i' <- doEval i
+    --         return $ (Idx_IIndex i') : e'
+    --       IRange i j -> do
+    --         i' <- doEval i
+    --         j' <- doEval j
+    --         return $ (Idx_IRange i' j') : e'
+    --       _ -> error "Invalid Index"
 
-    evalExtents :: Exp -> E EvalShape
-    evalExtents Z = return [] 
-    evalExtents (Cons e sh) =
-      do sh' <- evalExtents sh
-         e' <- doEval e
-         return $  e' : sh'
+    -- evalExtents :: Exp -> E EvalShape
+    -- evalExtents Z = return [] 
+    -- evalExtents (Cons e sh) =
+    --   do sh' <- evalExtents sh
+    --      e' <- doEval e
+    --      return $  e' : sh'
+    -- evalExtents e = error $ "EvalExtents: " ++ show e 
         
-    sizeExtents :: EvalShape -> Int
-    sizeExtents xs = foldl (\b (Scalar (VInt v))  -> v * b) 1 xs     
+    sizeExtents :: EvalResult -> Int
+    sizeExtents (Shap xs) = foldl (\b (Scalar (VInt v))  -> v * b) 1 xs     
     
     evalOp :: Op -> [Exp] -> E EvalResult
     evalOp op1 [e1]    = undefined 
@@ -293,4 +317,20 @@ fromScalarIdx (Shap sh) ix = Idx (fromIdx' sh ix)
     fromIdx' (Scalar (VInt x):xs) (Scalar (VInt i)) =  (Scalar (VInt (i `rem` x)) :
                                           (fromIdx' xs (Scalar (VInt (i `quot` x)))))
 fromIdx _ _ = error "fromIdx: error!"
-              
+
+
+{- 
+Let "v8"
+    (Let "v18"
+         (Let "v24"
+               (Lam "a1" (Let "v29"
+                              (Lam "a0" (Constant (VInt 1)))
+               (Let "v26"
+                    (Let "v27"
+                         (Op Div [Constant (VInt 10000),Var "v20"])
+                         (ShapeCons (Var "v27") ShapeZ))
+                    (Generate (Var "v26") (Var "v29")))))
+               (Let "v19" (Let "v20" (Op Mul [Constant (VInt 2),TuneParam (TPIntRange 1 10)]) (ShapeCons (Var "v20") ShapeZ)) (Generate (Var "v19") (Var "v24")))) (Let "v9" (Lam "a2" (Let "v11" (Lam "a0" (Lam "a1" (Op Add [Var "a0",Var "a1"]))) (Reduce (Var "v11") (Constant (VInt 0)) (Var "a2")))) (Map (Var "v9") (Var "v18")))) (Let "v2" (Lam "a0" (Lam "a1" (Op Add [Var "a0",Var "a1"]))) (Reduce (Var "v2") (Constant (VInt 0)) (Var "v8")))
+
+
+-} 
