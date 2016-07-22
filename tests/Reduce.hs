@@ -34,6 +34,7 @@ doIt = do
   putStrLn $ show $ uses 1 gr
   putStrLn $ show $ uses 8 gr
   putStrLn $ show $ uses 12 gr
+  putStrLn $ show $ allUses gr 
   putStrLn "\n\n"
 
   

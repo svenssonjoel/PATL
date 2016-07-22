@@ -17,7 +17,11 @@ import qualified Data.Map as M
 import qualified Data.Set as Set
 
 import Control.Monad.State
-import System.IO.Unsafe 
+import System.IO.Unsafe
+
+import qualified Data.Foldable as F
+import Data.Maybe
+import Data.List 
 
 
 -- This is the end goal (Or have it result in a Maybe A.Exp) 
@@ -59,8 +63,10 @@ type G a = State (M.Map Unique A.Exp) a
 --      * if variable is not bound and used in one subtree postpone decision
 
 graphToAST :: Graph Syntax -> Maybe A.Exp
-graphToAST (Graph edges root) = evalState (doIt root) M.empty
+graphToAST gr@(Graph edges root) = evalState (doIt root) M.empty
   where
+    usesMap = allUses gr 
+    
     doIt :: Unique -> G (Maybe A.Exp)
     doIt nid =
       case lookup nid edges of
@@ -84,13 +90,122 @@ graphToAST (Graph edges root) = evalState (doIt root) M.empty
                Nothing -> return $ Just (A.TuneParam tp)
                Just v  -> return $ Just v
             -- Introduce let bindings for "ss" (and treat recursively) 
-        (Tuple ss) -> undefined
+        (Tuple ss) -> do
+          --bound <- get
+          -- Scary fromJust usage. 
+          let uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
+              hist  = histogram (concatMap Set.elems (map snd uses_))
+          fmap Just $ doLet ss hist (A.Tuple) 
+
+        (Reduce s1 s2 s3) -> do
+          let ss = [s1,s2,s3]
+              uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
+              hist  = histogram (concatMap Set.elems (map snd uses_))
+          fmap Just $ doLet ss hist (\[e1,e2,e3] -> A.Reduce e1 e2 e3) 
+
+        a -> error $ show a 
+
+        
+    
 --          do bound <- get               
  --            let done = map (\nodid -> M.lookup nodid bound) ss :: [Maybe A.Exp]
   --               dv   = zip done ss -- indicates which should be introduced here
       --              fmap Just $ bindMissing dv (A.Tuple)
 
 
+    -- Let bind things here that are used in more than one loc
+    doLet :: [Unique] -> [(Unique,Int)] -> ([A.Exp] -> A.Exp) -> G A.Exp
+    doLet args uses_hist cont =
+      do
+        c <- doLetArgs args cont
+        doLetHist uses_hist c 
+
+    doLetHist :: [(Unique,Int)] -> A.Exp -> G A.Exp
+    doLetHist [] cont = return cont
+    doLetHist ((u,c):ucs) cont = 
+      if (c > 1)
+      then 
+        do bound <- get
+           case M.lookup u bound of
+             Just _ -> doLetHist ucs cont -- already bound
+             Nothing ->
+               do
+                 e <- doIt u -- recursively generate ast for u.
+              
+                 case e of
+                   Nothing -> error "doLetHist: Broken graph"
+                   Just e' -> do
+                     case shouldLet e' of
+                       False -> do
+                         put bound -- reset the effects of doIt u
+                                   -- reimplement shouldLet on Unique and graph
+                                   -- instead of on AST fixes this. 
+                         doLetHist ucs cont -- skip u and continue
+                       True -> do
+                         let v = (A.Var ("v" ++ show u))
+                         put (M.insert u v bound)
+                         
+                         doLetHist ucs (A.Let ("v" ++ show u) e' cont) 
+          
+                         
+                       
+      else doLetHist ucs cont
+
+    doLetArgs :: [Unique] -> ([A.Exp] -> A.Exp) -> G A.Exp 
+    doLetArgs args f = do (acc,f') <- doLetArgs' args [] f
+                          return $ f' (reverse acc) -- really reverse ? 
+    doLetArgs' [] acc f = return (acc,f)
+    doLetArgs' (u:us) acc f =
+      do
+        bound <- get
+        case M.lookup u bound of
+          Just e ->  doLetArgs' us (e:acc) f
+          Nothing -> do
+            let v = (A.Var ("v" ++ show u))
+            e <- doIt u -- recursively create AST for u
+            case e of
+              Nothing -> error "DoLetArgs: broken Graph!"
+              Just e' -> 
+                case shouldLet e' of
+                False -> doLetArgs' us (e':acc) f
+                True  -> do
+                  put (M.insert u v bound)
+                  doLetArgs' us
+                             (v:acc)
+                             (\vars -> A.Let ("v" ++ show u) e' (f vars)) 
+              
+
+
+    shouldLet (A.Constant _)  = False
+    shouldLet (A.Var _)       = False
+    shouldLet (A.IndexZ)      = False
+    shouldLet (A.ShapeZ)      = False
+    shouldLet (A.TuneParam _) = False
+    shouldLet (A.IAll)        = False
+    shouldLet (A.ShapeCons _ _)    = False
+    shouldLet (A.IndexCons _ _)    = False 
+    shouldLet a               = True
+
+
+histogram :: Ord a => [a] -> [(a,Int)]
+histogram xs = [ (head l, length l) | l <- group (sort xs) ]
+
+-- a combined allUses/uses function could be more efficient (TODO) 
+allUses :: Graph Syntax
+        -> M.Map Unique (Set.Set Unique)
+allUses gr@(Graph edges root) =
+  F.foldr addUsage (M.empty) reachable_nodes
+  
+  where
+    reachable_nodes = uses root gr -- all nids that can be reached
+                                   -- from root (including root)
+                      
+    addUsage nid m =
+      case M.lookup nid m of
+      Nothing -> let reachable_from_nid = uses nid gr
+                 in  M.insert nid reachable_from_nid m
+      Just _  -> m -- processed, exit 
+    
 
 
 uses :: Unique
@@ -254,16 +369,7 @@ uses start (Graph edges _) = doIt start Set.empty
 --             doLet xs (e:acc) f
 
 --         --refine this 
---         shouldLet (A.Constant _)  = False
---         shouldLet (A.Var _)       = False
---         shouldLet (A.IndexZ)      = False
---         shouldLet (A.ShapeZ)      = False
---         shouldLet (A.TuneParam _) = False
---         shouldLet (A.IAll)        = False
---         shouldLet (A.ShapeCons _ _)    = False
---         shouldLet (A.IndexCons _ _)    = False 
---         shouldLet a               = True
-
+        
      
 
 
