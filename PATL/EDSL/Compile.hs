@@ -89,45 +89,87 @@ graphToAST gr@(Graph edges root) = evalState (doIt root) M.empty
              case M.lookup nid bound of
                Nothing -> return $ Just (A.TuneParam tp)
                Just v  -> return $ Just v
-            -- Introduce let bindings for "ss" (and treat recursively) 
+            -- Introduce let bindings for "ss" (and treat recursively)
+
+        (Lam (FunArg a) e) ->
+          do e' <- doIt e
+             case e' of
+               Nothing -> return Nothing
+               Just body ->           
+                 return $ Just (A.Lam ("a" ++ show a) body )
+          
+             
         (Tuple ss) -> do
-          --bound <- get
-          -- Scary fromJust usage. 
           let uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
               hist  = histogram (concatMap Set.elems (map snd uses_))
-          fmap Just $ doLet ss hist (A.Tuple) 
+          fmap Just $ doLet ss hist (A.Tuple)
+          
+        (Op op ss) -> do
+          let uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
+              hist  = histogram (concatMap Set.elems (map snd uses_))
+          fmap Just $ doLet ss hist (A.Op op) 
 
         (Reduce s1 s2 s3) -> do
           let ss = [s1,s2,s3]
               uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
               hist  = histogram (concatMap Set.elems (map snd uses_))
-          fmap Just $ doLet ss hist (\[e1,e2,e3] -> A.Reduce e1 e2 e3) 
+          fmap Just $ doLet ss hist (\[e1,e2,e3] -> A.Reduce e1 e2 e3)
+        (ZipWith s1 s2 s3) -> do
+          let ss = [s1,s2,s3]
+              uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
+              hist  = histogram (concatMap Set.elems (map snd uses_))
+          fmap Just $ doLet ss hist (\[e1,e2,e3] -> A.ZipWith e1 e2 e3)
+
+        (Iota s1) -> do
+          let ss = [s1]
+              uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
+              hist  = histogram (concatMap Set.elems (map snd uses_))
+          fmap Just $ doLet ss hist (\[e1] -> A.Iota e1) 
+
+        (ShapeCons s1 s2) -> do
+          let ss = [s1,s2]
+              uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
+              hist  = histogram (concatMap Set.elems (map snd uses_))
+          fmap Just $ doLet ss hist (\[e1,e2] -> A.ShapeCons e1 e2)
+
+        (IndexCons s1 s2) -> do
+          let ss = [s1,s2]
+              uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
+              hist  = histogram (concatMap Set.elems (map snd uses_))
+          fmap Just $ doLet ss hist (\[e1,e2] -> A.IndexCons e1 e2)
+
+        (Map s1 s2) -> do
+          let ss = [s1,s2]
+              uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
+              hist  = histogram (concatMap Set.elems (map snd uses_))
+          fmap Just $ doLet ss hist (\[e1,e2] -> A.Map e1 e2)
+        (Generate s1 s2) -> do
+          let ss = [s1,s2]
+              uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
+              hist  = histogram (concatMap Set.elems (map snd uses_))
+          fmap Just $ doLet ss hist (\[e1,e2] -> A.Generate e1 e2)
+
 
         a -> error $ show a 
 
-        
-    
---          do bound <- get               
- --            let done = map (\nodid -> M.lookup nodid bound) ss :: [Maybe A.Exp]
-  --               dv   = zip done ss -- indicates which should be introduced here
-      --              fmap Just $ bindMissing dv (A.Tuple)
-
+       
 
     -- Let bind things here that are used in more than one loc
     doLet :: [Unique] -> [(Unique,Int)] -> ([A.Exp] -> A.Exp) -> G A.Exp
     doLet args uses_hist cont =
       do
+        f <- doLetHist uses_hist 
         c <- doLetArgs args cont
-        doLetHist uses_hist c 
+        return $ f c
 
-    doLetHist :: [(Unique,Int)] -> A.Exp -> G A.Exp
-    doLetHist [] cont = return cont
-    doLetHist ((u,c):ucs) cont = 
+    doLetHist :: [(Unique,Int)] -> G (A.Exp -> A.Exp)
+    doLetHist []  = return id 
+    doLetHist ((u,c):ucs) = 
       if (c > 1)
       then 
         do bound <- get
            case M.lookup u bound of
-             Just _ -> doLetHist ucs cont -- already bound
+             Just _ -> doLetHist ucs -- already bound
              Nothing ->
                do
                  e <- doIt u -- recursively generate ast for u.
@@ -140,16 +182,18 @@ graphToAST gr@(Graph edges root) = evalState (doIt root) M.empty
                          put bound -- reset the effects of doIt u
                                    -- reimplement shouldLet on Unique and graph
                                    -- instead of on AST fixes this. 
-                         doLetHist ucs cont -- skip u and continue
+                         doLetHist ucs -- skip u and continue
                        True -> do
                          let v = (A.Var ("v" ++ show u))
                          put (M.insert u v bound)
-                         
-                         doLetHist ucs (A.Let ("v" ++ show u) e' cont) 
+
+                         f <- doLetHist ucs 
+                         return $ (\x -> A.Let ("v" ++ show u) e' (f x)) 
+        
           
                          
                        
-      else doLetHist ucs cont
+      else doLetHist ucs
 
     doLetArgs :: [Unique] -> ([A.Exp] -> A.Exp) -> G A.Exp 
     doLetArgs args f = do (acc,f') <- doLetArgs' args [] f
@@ -169,6 +213,7 @@ graphToAST gr@(Graph edges root) = evalState (doIt root) M.empty
                 case shouldLet e' of
                 False -> doLetArgs' us (e':acc) f
                 True  -> do
+                  -- bound <- get 
                   put (M.insert u v bound)
                   doLetArgs' us
                              (v:acc)
@@ -180,15 +225,17 @@ graphToAST gr@(Graph edges root) = evalState (doIt root) M.empty
     shouldLet (A.Var _)       = False
     shouldLet (A.IndexZ)      = False
     shouldLet (A.ShapeZ)      = False
-    shouldLet (A.TuneParam _) = False
+    shouldLet (A.TuneParam _) = True   -- Let bind these
     shouldLet (A.IAll)        = False
     shouldLet (A.ShapeCons _ _)    = False
     shouldLet (A.IndexCons _ _)    = False 
     shouldLet a               = True
 
 
+-- The reverse is a hack!
+--  
 histogram :: Ord a => [a] -> [(a,Int)]
-histogram xs = [ (head l, length l) | l <- group (sort xs) ]
+histogram xs = [ (head l, length l) | l <- group (reverse $ sort xs) ]
 
 -- a combined allUses/uses function could be more efficient (TODO) 
 allUses :: Graph Syntax
