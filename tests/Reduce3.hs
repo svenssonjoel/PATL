@@ -1,0 +1,59 @@
+{-# LANGUAGE DataKinds #-} 
+
+module Main where 
+
+import PATL.EDSL
+import PATL.EDSL.Syntax hiding (Z) 
+import PATL.EDSL.Shape
+import PATL.EDSL.Compile
+import qualified PATL.AST as AST
+import PATL.Eval
+import PATL.Value 
+
+import Prelude hiding (map,div)
+import qualified Prelude as P
+
+import qualified Data.Map as M
+
+-- Sum 
+
+generateData =
+  let ts = 2 * tInt 1 10
+      bs = 10000 `div` ts
+  in generate (emb (ts:.Z :: Shape '[Exp Int]))
+              (emb $ \_ -> generate (emb (bs:.Z :: Shape '[Exp Int])) (emb (\_ -> (1 :: Exp Int))))
+                                        
+
+sumIt :: Exp Int
+sumIt = reduce (emb (+)) 0 $ map (emb (reduce (emb (+)) 0)) generateData 
+          -- shape annotation currently required
+
+doIt = do
+  putStrLn "**** EDSL Syntax ****"
+  putStrLn $ show (toExp sumIt)
+  putStrLn "\n\n"
+  
+  gr <- genGraph (unExp sumIt)
+
+  putStrLn "**** Graph ****" 
+  putStrLn $ show gr
+  putStrLn "\n\n"
+
+  
+  case graphToAST gr of
+    Nothing -> putStrLn "No AST"
+    Just a -> do
+        putStrLn "**** AST ****"
+        putStrLn $ show a
+        putStrLn "\n\n"
+        putStrLn "**** extracted TP ****"
+        let (a',m) = AST.extractTuneParams a
+        putStrLn $ show m
+        putStrLn "\n\n"
+        putStrLn "**** Evaluated AST ****"
+        let res = eval (M.fromList [("tp0", Scalar (VInt 2))]) a'
+        putStrLn $ show res
+
+
+main = do
+  doIt 
