@@ -16,7 +16,9 @@ import qualified Data.Map as M
 
 import Control.Monad.State 
 
-import Text.Show.Functions 
+import Text.Show.Functions
+
+import Test.QuickCheck 
 
 ------------------------------------------------------------
 -- Evaluation
@@ -34,8 +36,19 @@ data EvalResult = Scalar Value
                 | Idx_IIndex EvalResult
                 | Idx_IRange EvalResult EvalResult
                 | Function (EvalResult -> EvalResult)
-                deriving (Show) 
+                deriving ( Show) 
 
+instance Eq EvalResult where
+  (Scalar v1) == (Scalar v2) = v1 == v2
+  (Array s1 v1) == (Array s2 v2) = s1 == s2 && v1 == v2
+  (Shap v1) == (Shap v2) = v1 == v2
+  (Idx v1)  == (Idx v2)  = v1 == v2
+  (Idx_IAll) == (Idx_IAll) = True
+  (Idx_IIndex v1) == (Idx_IIndex v2) = v1 == v2
+  (Idx_IRange a1 a2) == (Idx_IRange b1 b2) = a1 == b1 && a2 == b2
+  (Function f) == (Function g) = error "comparing equality on functions"
+  a == b = False
+  
 
 
 type Env = M.Map Identifier EvalResult --what about functions ?
@@ -277,6 +290,7 @@ eval env e = evalState (doEval e) env
                Sub -> return $ Scalar (VInt (i1 - i2))
                Mul -> return $ Scalar (VInt (i1 * i2))
                Div -> return $ Scalar (VInt (i1 `div` i2))
+               Powi -> return $ Scalar (VInt (i1 ^ i2)) 
 
            (Scalar (VFloat f1), Scalar (VFloat f2)) ->
              case op2 of
@@ -284,6 +298,7 @@ eval env e = evalState (doEval e) env
                Sub -> return $ Scalar (VFloat (f1 - f2))
                Mul -> return $ Scalar (VFloat (f1 * f2))
                Div -> return $ Scalar (VFloat (f1 / f2))
+               Powi -> error "Powi applied to float" 
            (a,b) -> error $ show a ++ " " ++ show op2 ++ " " ++ show b
 
    
@@ -319,18 +334,44 @@ fromScalarIdx (Shap sh) ix = Idx (fromIdx' sh ix)
 fromIdx _ _ = error "fromIdx: error!"
 
 
-{- 
-Let "v8"
-    (Let "v18"
-         (Let "v24"
-               (Lam "a1" (Let "v29"
-                              (Lam "a0" (Constant (VInt 1)))
-               (Let "v26"
-                    (Let "v27"
-                         (Op Div [Constant (VInt 10000),Var "v20"])
-                         (ShapeCons (Var "v27") ShapeZ))
-                    (Generate (Var "v26") (Var "v29")))))
-               (Let "v19" (Let "v20" (Op Mul [Constant (VInt 2),TuneParam (TPIntRange 1 10)]) (ShapeCons (Var "v20") ShapeZ)) (Generate (Var "v19") (Var "v24")))) (Let "v9" (Lam "a2" (Let "v11" (Lam "a0" (Lam "a1" (Op Add [Var "a0",Var "a1"]))) (Reduce (Var "v11") (Constant (VInt 0)) (Var "a2")))) (Map (Var "v9") (Var "v18")))) (Let "v2" (Lam "a0" (Lam "a1" (Op Add [Var "a0",Var "a1"]))) (Reduce (Var "v2") (Constant (VInt 0)) (Var "v8")))
 
 
--} 
+
+-- -------------------------------------------------------
+-- Validation of tuneparams 
+-- -------------------------------------------------------
+
+checkTPSafety :: Exp -> IO ()
+checkTPSafety e = quickCheck (tpSafe e) 
+
+tpSafe :: Exp -> Property
+tpSafe e = forAll envG
+                  (\env1 -> forAll envG
+                            (\env2 -> (eval env1 e' == eval env2 e' ))) 
+  where
+    (e',tps)  = extractTuneParams e 
+    envG      = envGenerator tps  
+
+envGenerator :: (M.Map Identifier TP) -> Gen Env
+envGenerator m = do m' <- mapM (\(i,tp) -> do {tp' <- genTP tp; return (i,tp')}) (M.toList m)
+                    return $ M.fromList m' 
+  where
+    genTP :: TP -> Gen EvalResult
+    genTP (TPIntRange i j) = do v <- choose (i,j) 
+                                return (Scalar (VInt v))   
+    genTP TPBool           = do b <- arbitrary
+                                return (Scalar (VBool b))
+    genTP NumCores         = do v <- choose (1,2048)
+                                return (Scalar (VInt v))
+    genTP SIMDWidth        = do v <- choose (1, 8)
+                                return (Scalar (VInt (v * 4)))
+    genTP CacheSize        = do v <- choose (1, 256)
+                                return (Scalar (VInt (16384 * 1024 * v)))
+    genTP CacheLineSize    = do v <- choose (1, 32)
+                                return (Scalar (VInt (1024 * v)))
+    
+                                        
+                               
+
+                                
+                                

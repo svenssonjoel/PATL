@@ -193,3 +193,7 @@ instance Num a => Num (Exp a) where
 -- Integer division
 div :: Integral a => Exp a -> Exp a -> Exp a
 div a b = liftSE $ Op Div [toExp a, toExp b] 
+
+
+powi :: Integral a => Exp a -> Exp a -> Exp a
+powi a b = liftSE $ Op Powi [toExp a, toExp b] 

@@ -18,8 +18,8 @@ import qualified Data.Map as M
 -- Sum 
 
 generateData =
-  let ts = 2 * tInt 1 10
-      bs = 10000 `div` ts
+  let ts = 10  `powi` tInt 1 5
+      bs = 100000 `div` ts
   in generate (emb (ts:.Z :: Shape '[Exp Int]))
               (emb $ \_ -> generate (emb (bs:.Z :: Shape '[Exp Int])) (emb (\_ -> (1 :: Exp Int))))
                                         
@@ -53,6 +53,9 @@ doIt = do
         putStrLn "**** Evaluated AST ****"
         let res = eval (M.fromList [("tp0", Scalar (VInt 2))]) a'
         putStrLn $ show res
+
+        putStrLn "**** Checking TP safety ****"
+        checkTPSafety a
 
 
 main = do
