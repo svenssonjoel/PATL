@@ -132,10 +132,9 @@ eval env e = evalState (doEval e) env
         extents' <- doEval extents -- evalExtents extents
         evalIota extents' -- hmm
         
-   
-
       -- Project out of container
-      -- This one is scary 
+      -- This one is scary
+      -- TODO: Implement! 
       Prj e idx -> undefined
 
       -- SizeOf can return either a scalar or a shape. 
@@ -147,7 +146,6 @@ eval env e = evalState (doEval e) env
 
 
       -- PATTERNS
-      -- TODO: FINISH IMPLEMENTING THIS 
       Generate exts fun ->
         do exts' <- doEval exts -- evalExtents exts
            (Function fun') <- doEval fun 
@@ -155,9 +153,6 @@ eval env e = evalState (doEval e) env
            return $ Array exts' (V.generate elems
                               (\i -> fun' (fromScalarIdx exts' (Scalar (VInt i)))))
            
-
-           
-
 
       Map fun e ->
         do e' <- doEval e
@@ -340,6 +335,9 @@ fromIdx _ _ = error "fromIdx: error!"
 -- -------------------------------------------------------
 -- Validation of tuneparams 
 -- -------------------------------------------------------
+
+-- TODO: This is currently extremely slow.
+--       Figure out why and fix it. 
 
 checkTPSafety :: Exp -> IO ()
 checkTPSafety e = quickCheck (tpSafe e) 
