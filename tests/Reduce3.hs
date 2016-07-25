@@ -23,7 +23,7 @@ generateData =
   in generate (emb (ts:.Z :: Shape '[Exp Int]))
               (emb $ \_ -> generate (emb (bs:.Z :: Shape '[Exp Int])) (emb (\_ -> (1 :: Exp Int))))
                                         
-
+-- two level nested data-parallel program 
 sumIt :: Exp Int
 sumIt = reduce (emb (+)) 0 $ map (emb (reduce (emb (+)) 0)) generateData 
           -- shape annotation currently required
