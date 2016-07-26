@@ -4,9 +4,6 @@ module PATL.Eval where
 
 
 import PATL.AST
-import qualified PATL.EDSL.Shape as S -- TODO: This is unfortunate, fix it! 
-import PATL.EDSL.Shape hiding (Z,IAll,IIndex,IRange)
-
 import PATL.Value
 import PATL.Operators
 import PATL.TuneParam
@@ -14,7 +11,7 @@ import PATL.TuneParam
 import qualified Data.Vector as V 
 import qualified Data.Map as M
 
-import Control.Monad.State 
+import Control.Monad.State
 
 import Text.Show.Functions
 
