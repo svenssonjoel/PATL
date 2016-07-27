@@ -132,8 +132,11 @@ eval env e = evalState (doEval e) env
       -- Project out of container
       -- This one is scary
       -- TODO: Implement! 
-      Prj e idx -> undefined
-
+      Prj e idx -> do
+        idx' <- doEval idx
+        e' <- doEval e    
+        doPrj e' idx'
+              
       -- SizeOf can return either a scalar or a shape. 
       SizeOf e ->
         do e' <- doEval e
@@ -243,30 +246,7 @@ eval env e = evalState (doEval e) env
          let  size  = sizeExtents sh
          return $ Array sh (V.generate size (\i -> (Scalar (VInt i))))
 
-    -- evalIndex :: Exp -> E EvalShape
-    -- evalIndex Z = return []
-    -- evalIndex (Cons idx e) = -- TODO: probably wrong here
-    --   do
-    --     e' <- evalIndex e
-    --     case idx of
-    --       IAll -> return $ Idx_IAll : e' 
-    --       IIndex i -> do
-    --         i' <- doEval i
-    --         return $ (Idx_IIndex i') : e'
-    --       IRange i j -> do
-    --         i' <- doEval i
-    --         j' <- doEval j
-    --         return $ (Idx_IRange i' j') : e'
-    --       _ -> error "Invalid Index"
-
-    -- evalExtents :: Exp -> E EvalShape
-    -- evalExtents Z = return [] 
-    -- evalExtents (Cons e sh) =
-    --   do sh' <- evalExtents sh
-    --      e' <- doEval e
-    --      return $  e' : sh'
-    -- evalExtents e = error $ "EvalExtents: " ++ show e 
-        
+    -- Total size in number of elements 
     sizeExtents :: EvalResult -> Int
     sizeExtents (Shap xs) = foldl (\b (Scalar (VInt v))  -> v * b) 1 xs     
     
@@ -294,7 +274,7 @@ eval env e = evalState (doEval e) env
            (a,b) -> error $ show a ++ " " ++ show op2 ++ " " ++ show b
 
    
-    
+    doPrj = error "doPrj: not yet implemented"  
 
 
 
