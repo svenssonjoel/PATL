@@ -274,7 +274,7 @@ eval env e = evalState (doEval e) env
            (a,b) -> error $ show a ++ " " ++ show op2 ++ " " ++ show b
 
    
-    doPrj = error "doPrj: not yet implemented"  
+    doPrj (Array sh v) (Idx idx) = error "doPrj: not yet implemented"  
 
 
 
