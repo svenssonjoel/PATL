@@ -274,8 +274,22 @@ eval env e = evalState (doEval e) env
            (a,b) -> error $ show a ++ " " ++ show op2 ++ " " ++ show b
 
    
-    doPrj (Array sh v) (Idx idx) = error "doPrj: not yet implemented"  
+    doPrj (Array sh v) (Idx idx) = error "doPrj: not yet implemented"
 
+    newShape :: [EvalResult] -> [EvalResult] -> [EvalResult]
+    newShape [] [] = []
+    newShape (s:sh) (i:idx) =
+      case i of
+        Idx_IAll -> s : newShape sh idx
+        Idx_IIndex _ -> newShape sh idx 
+        Idx_IRange (Scalar (VInt x))
+                   (Scalar (VInt y))
+          -> (Scalar $ VInt (y - x)) : newShape sh idx
+
+    -- TODO: Turn a flattened index in the newShape
+    --       into a flattened index in the old shape 
+        
+    
 
 
 -- -------------------------------------------------------
