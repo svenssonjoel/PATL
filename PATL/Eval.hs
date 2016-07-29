@@ -6,6 +6,7 @@ module PATL.Eval where
 import PATL.AST
 import PATL.Value
 import PATL.Operators
+import PATL.Patterns
 import PATL.TuneParam
 
 import qualified Data.Vector as V 
@@ -91,7 +92,6 @@ eval env e = evalState (doEval e) env
                 let env2 = M.insert ident fr env
                 put env2 
                 res <- doEval e
-                put env -- reset the environment
                 return res
              ) env
              -- changes to env within function does not leak out 
@@ -146,74 +146,8 @@ eval env e = evalState (doEval e) env
 
 
       -- PATTERNS
-      Generate exts fun ->
-        do exts' <- doEval exts -- evalExtents exts
-           (Function fun') <- doEval fun 
-           let elems = sizeExtents exts'
-           return $ Array exts' (V.generate elems
-                              (\i -> fun' (fromScalarIdx exts' (Scalar (VInt i)))))
-           
-
-      Map fun e ->
-        do e' <- doEval e
-           fun' <- doEval fun 
-           case e' of
-             Array sh v ->
-               case fun' of
-                 Function f -> return $ Array sh (V.map f v)
-                 _ -> error "Argument to Map is not a function"
-             _ -> error "Argument to Map is not an Array"
-             -- The errors here are of the kind that type checking will catch 
-
-
-      -- ZipWith needs to do some extents checking.
-      -- TODO: check extents
-      -- TODO: decide what combinations of shapes are allowed in a zipwith
-      -- Currently requires that both inputs have exact same shape and extents 
-      ZipWith fun e1 e2 ->
-        do e1' <- doEval e1
-           e2' <- doEval e2
-           fun' <- doEval fun
-           case (e1',e2') of
-             (Array sh1 v1, Array sh2 v2) ->
-               case fun' of
-                 Function f ->
-                   return $ Array sh1
-                   (V.zipWith
-                    (\x y -> let Function f' = f x in f' y) v1 v2) 
-                 _ -> error "Argument to ZipWith is not a function"
-             _ -> error "Argument to ZipWith is not an Array" 
-                         
-
-
-      -- what reduction to perform here ???
-      -- Reduce should be augmented with a description of
-      -- what dimension to reduce.
-      -- Currently reduce over outermost dimension (reduce_rows)
-
-      -- Reduction could actually be down to a scalar in ALL cases !
-      -- It is then up to the programmer to "block" up the data into
-      -- chunks before (map reduce) on the blocked structure, if some
-      -- other reduction is desired. 
-
-      -- Reduce now produces scalar 
-      Reduce fun e_id e ->
-        do e'    <- doEval e
-           e_id' <- doEval e_id 
-           Function f <- doEval fun
-           case e' of
-             (Array (Shap sh) v) ->
-               case sh of
-                 [] ->  return $ v V.! 0 --    Array sh v
-                 -- any other shape, reduce array to a single value 
-                 _ -> return $ V.foldr (\x y -> let Function f' = f x in f' y) e_id' v
---                 [] ->  return $ Array sh v
-                 -- any other shape, reduce array to a single value 
---                 _ -> return $ Array [] (V.singleton $ V.foldr
---                                         (\x y -> let Function f' = f x in f' y) e_id' v)
-                
-             _ -> error "Argument to reduce is not an Array"
-
+      Pattern p es -> evalPat p es
+                           
 -- Shape and index related
       IAll -> return $ Idx_IAll 
       IIndex i -> do
@@ -272,6 +206,82 @@ eval env e = evalState (doEval e) env
                Div -> return $ Scalar (VFloat (f1 / f2))
                Powi -> error "Powi applied to float" 
            (a,b) -> error $ show a ++ " " ++ show op2 ++ " " ++ show b
+
+-- -------------------------------------------------------
+-- Evaluate Patterns 
+-- -------------------------------------------------------
+    evalPat p es =
+      case (p,es) of
+        (Generate,[exts,fun]) -> 
+          do exts' <- doEval exts -- evalExtents exts
+             (Function fun') <- doEval fun 
+             let elems = sizeExtents exts'
+             return $ Array exts' (V.generate elems
+                              (\i -> fun' (fromScalarIdx exts'
+                                           (Scalar (VInt i)))))
+           
+
+        (Map,[fun,e]) ->
+          do e' <- doEval e
+             fun' <- doEval fun 
+             case e' of
+               Array sh v ->
+                 case fun' of
+                   Function f -> return $ Array sh (V.map f v)
+                   _ -> error "Argument to Map is not a function"
+               _ -> error "Argument to Map is not an Array"
+             -- The errors here are of the kind that type
+             -- checking will catch 
+
+
+      -- ZipWith needs to do some extents checking.
+      -- TODO: check extents
+      -- TODO: decide what combinations of shapes are allowed in a zipwith
+      -- Currently requires that both inputs have exact same shape and extents 
+        (ZipWith, [fun,e1,e2]) ->
+          do e1' <- doEval e1
+             e2' <- doEval e2
+             fun' <- doEval fun
+             case (e1',e2') of
+               (Array sh1 v1, Array sh2 v2) ->
+                 case fun' of
+                   Function f ->
+                     return $ Array sh1
+                     (V.zipWith
+                      (\x y -> let Function f' = f x in f' y) v1 v2) 
+                   _ -> error "Argument to ZipWith is not a function"
+               _ -> error "Argument to ZipWith is not an Array" 
+                         
+
+
+      -- what reduction to perform here ???
+      -- Reduce should be augmented with a description of
+      -- what dimension to reduce.
+      -- Currently reduce over outermost dimension (reduce_rows)
+
+      -- Reduction could actually be down to a scalar in ALL cases !
+      -- It is then up to the programmer to "block" up the data into
+      -- chunks before (map reduce) on the blocked structure, if some
+      -- other reduction is desired. 
+
+      -- Reduce now produces scalar 
+        (Reduce, [fun,e_id,e]) ->
+          do e'    <- doEval e
+             e_id' <- doEval e_id 
+             Function f <- doEval fun
+             case e' of
+               (Array (Shap sh) v) ->
+                 case sh of
+                   [] ->  return $ v V.! 0 --    Array sh v
+                   -- any other shape, reduce array to a single value 
+                   _ -> return $ V.foldr (\x y ->
+                                           let Function f' = f x
+                                           in f' y) e_id' v
+                
+               _ -> error "Argument to reduce is not an Array"
+
+
+           
 
    
     doPrj (Array sh v) (Idx idx) = error "doPrj: not yet implemented"

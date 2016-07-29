@@ -9,6 +9,7 @@ module PATL.AST where
 import PATL.Value 
 import PATL.TuneParam
 import PATL.Operators
+import PATL.Patterns 
 
 import qualified Data.Map as M
 import Control.Monad.State 
@@ -81,15 +82,15 @@ data Exp = -- Annotated with "top-level" types
            -------------------------------------------------------
            -- Patterns
            ------------------------------------------------------- 
-           
+         | Pattern Pattern [Exp]
            -- Generate :: (Shape Int) -> (Index -> a) -> Array sh a 
-         | Generate Exp Exp
+--      | Generate Exp Exp
            
            -- Map :: (a -> b) -> Array sh a -> Array sh b 
-         | Map Exp Exp
+--       | Map Exp Exp
            
            -- ZipWith :: (a -> b -> c) -> Array sh a -> Array sh b -> Array sh c
-         | ZipWith Exp Exp Exp
+--       | ZipWith Exp Exp Exp
            
            -- Reduction is a tricky one!
            -- Reduce :: (a -> b -> b) -> b -> Array (sh:.i) a -> Array sh b
@@ -99,7 +100,7 @@ data Exp = -- Annotated with "top-level" types
 
            -- I think now that there will be only one Reduce!
            -- Reduce :: (a -> b -> b) -> b -> Array sh a -> b
-         | Reduce Exp Exp Exp        
+--       | Reduce Exp Exp Exp        
            -- | Permute ?
            -- | Scatter
            -- | Gather
@@ -123,10 +124,11 @@ foldExp f a e = doIt a e
     doIt a e@(Iota e1) = f (doIt a e1) e
     doIt a e@(Prj e1 e2) = f (foldl doIt a [e1,e2]) e
     doIt a e@(SizeOf e1) = f (doIt a e1) e
-    doIt a e@(Generate e1 e2) = f (foldl doIt a [e1,e2]) e
-    doIt a e@(Map e1 e2) = f (foldl doIt a [e1,e2]) e
-    doIt a e@(ZipWith e1 e2 e3) = f (foldl doIt a [e1,e2,e3]) e
-    doIt a e@(Reduce e1 e2 e3) = f (foldl doIt a [e1,e2,e3]) e 
+    doIt a e@(Pattern _ es) = f (foldl doIt a es) e
+--  doIt a e@(Generate e1 e2) = f (foldl doIt a [e1,e2]) e
+--  doIt a e@(Map e1 e2) = f (foldl doIt a [e1,e2]) e
+--  doIt a e@(ZipWith e1 e2 e3) = f (foldl doIt a [e1,e2,e3]) e
+--  doIt a e@(Reduce e1 e2 e3) = f (foldl doIt a [e1,e2,e3]) e 
     doIt a e = f a e
 
 
@@ -167,10 +169,11 @@ extractTuneParams e = let (a,(m,i)) = runState (doIt e) (M.empty,0)
     doIt (Iota e1) = Iota <$> doIt e1
     doIt (Prj e1 e2) = Prj <$> doIt e1 <*> doIt e2
     doIt (SizeOf e1) = SizeOf <$> doIt e1
-    doIt (Generate e1 e2) = Generate <$> doIt e1 <*> doIt e2
-    doIt (Map e1 e2) = Map <$> doIt e1 <*> doIt e2
-    doIt (ZipWith e1 e2 e3) = ZipWith <$> doIt e1 <*> doIt e2 <*> doIt e3
-    doIt (Reduce e1 e2 e3) = Reduce <$> doIt e1 <*> doIt e2 <*> doIt e3 
+    doIt (Pattern p es) = Pattern p <$> mapM doIt es
+--  doIt (Generate e1 e2) = Generate <$> doIt e1 <*> doIt e2
+--  doIt (Map e1 e2) = Map <$> doIt e1 <*> doIt e2
+--  doIt (ZipWith e1 e2 e3) = ZipWith <$> doIt e1 <*> doIt e2 <*> doIt e3
+--  doIt (Reduce e1 e2 e3) = Reduce <$> doIt e1 <*> doIt e2 <*> doIt e3 
      
 -- non recursive cases 
     doIt  e = return e  

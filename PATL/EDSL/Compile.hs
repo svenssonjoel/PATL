@@ -5,7 +5,8 @@ module PATL.EDSL.Compile where
 
 import PATL.EDSL.Shape hiding (IIndex, IRange, Z ) 
 
-import qualified PATL.AST as A 
+import qualified PATL.AST as A
+import qualified PATL.Patterns as P
 import qualified PATL.EDSL as E
 import PATL.EDSL.Syntax 
 
@@ -113,12 +114,14 @@ graphToAST gr@(Graph edges root) = evalState (doIt root) M.empty
           let ss = [s1,s2,s3]
               uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
               hist  = histogram (concatMap Set.elems (map snd uses_))
-          fmap Just $ doLet ss hist (\[e1,e2,e3] -> A.Reduce e1 e2 e3)
+          fmap Just $ doLet ss hist (\[e1,e2,e3] ->
+                                      A.Pattern P.Reduce [e1,e2,e3])
         (ZipWith s1 s2 s3) -> do
           let ss = [s1,s2,s3]
               uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
               hist  = histogram (concatMap Set.elems (map snd uses_))
-          fmap Just $ doLet ss hist (\[e1,e2,e3] -> A.ZipWith e1 e2 e3)
+          fmap Just $ doLet ss hist (\[e1,e2,e3] ->
+                                      A.Pattern P.ZipWith [e1,e2,e3])
 
         (Iota s1) -> do
           let ss = [s1]
@@ -142,12 +145,14 @@ graphToAST gr@(Graph edges root) = evalState (doIt root) M.empty
           let ss = [s1,s2]
               uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
               hist  = histogram (concatMap Set.elems (map snd uses_))
-          fmap Just $ doLet ss hist (\[e1,e2] -> A.Map e1 e2)
+          fmap Just $ doLet ss hist (\[e1,e2] ->
+                                      A.Pattern P.Map [e1,e2])
         (Generate s1 s2) -> do
           let ss = [s1,s2]
               uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
               hist  = histogram (concatMap Set.elems (map snd uses_))
-          fmap Just $ doLet ss hist (\[e1,e2] -> A.Generate e1 e2)
+          fmap Just $ doLet ss hist (\[e1,e2] ->
+                                      A.Pattern P.Generate [e1,e2])
 
 
         a -> error $ show a 
