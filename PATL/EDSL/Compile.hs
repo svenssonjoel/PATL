@@ -62,6 +62,9 @@ type G a = State (M.Map Unique A.Exp) a
 --      * if variable is not bound and used in more than one subtree
 --           Bind it here
 --      * if variable is not bound and used in one subtree postpone decision
+-- TODO: The above needs an addition that prohibit specific leakage from
+--       under lambdas (anything depending on the variable bound by the lambda)
+
 
 graphToAST :: Graph Syntax -> Maybe A.Exp
 graphToAST gr@(Graph edges root) = evalState (doIt root) M.empty
