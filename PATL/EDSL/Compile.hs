@@ -237,7 +237,13 @@ graphToAST gr@(Graph edges root) = evalState (doIt root) M.empty
     shouldLet (A.IAll)        = False
     shouldLet (A.ShapeCons _ _)    = False
     shouldLet (A.IndexCons _ _)    = False 
-    shouldLet a               = True
+    shouldLet a               = not $ containsLamVar a
+
+    containsLamVar e = not $
+                       A.foldExp (\a b -> a && (not (isLamVar b))) True e
+    isLamVar (A.Var str)  = isPrefixOf "a" str
+    isLamVar _ = False 
+    
 
 
 -- The reverse is a hack!

@@ -51,6 +51,7 @@ library
   exposed-modules: PATL.GenOpenCL
                  , PATL.AST
                  , PATL.Operators
+                 , PATL.Patterns 
                  , PATL.TuneParam
                  , PATL.Value
                  , PATL.Eval                                 
