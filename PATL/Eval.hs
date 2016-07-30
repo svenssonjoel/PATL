@@ -34,7 +34,9 @@ data EvalResult = Scalar Value
                 | Idx_IIndex EvalResult
                 | Idx_IRange EvalResult EvalResult
                 | Function (EvalResult -> EvalResult)
-                deriving ( Show) 
+                deriving ( Show)
+
+rInt i = Scalar (VInt i) 
 
 instance Eq EvalResult where
   (Scalar v1) == (Scalar v2) = v1 == v2
@@ -297,18 +299,25 @@ eval env e = evalState (doEval e) env
           -> (Scalar $ VInt (y - x)) : newShape sh idx
 
     -- TODO: Turn a flattened index in the newShape
-    --       into a flattened index in the old shape 
-        
+    --       into a flattened index in the old shape
+    --  If this is only used to create the new V.Vector, it could return an int...     
+    flatIndexShapeConvert :: [EvalResult] -> [EvalResult] -> EvalResult -> EvalResult
+    flatIndexShapeConvert oldShape mapping idx = undefined 
+      where
+        doConv = undefined 
     
-
 
 -- -------------------------------------------------------
 -- toIdx, fromIdx 
 -- -------------------------------------------------------
 
+-- Fastest growing is outermost!
+-- Thus all the reverses...
+        
+
 --       Shape         Shaped Index   Scalar 
 toScalarIdx :: EvalResult -> EvalResult -> EvalResult
-toScalarIdx (Shap sh) (Idx ix) = toIdx' sh ix
+toScalarIdx (Shap sh) (Idx ix) = toIdx' (reverse sh) (reverse ix)
   where
     toIdx' [] [] = Scalar (VInt 0)
     toIdx' (Scalar (VInt s):ss) (Scalar (VInt i):is) =
@@ -319,7 +328,7 @@ toScalarIdx _ _ = error "toIdx: error!"
 
 --         Shape             Scalar     (Shaped Index) 
 fromScalarIdx :: EvalResult -> EvalResult -> EvalResult
-fromScalarIdx (Shap sh) ix = Idx (fromIdx' sh ix)
+fromScalarIdx (Shap sh) ix = Idx (reverse $ fromIdx' (reverse sh) ix)
   where
     --       Z  _
     -- lots of potential unmatched cases here ! 
