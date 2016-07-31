@@ -307,11 +307,10 @@ eval env e = evalState (doEval e) env
                    (Scalar (VInt y))
           -> (Scalar $ VInt (y - x)) : newShape sh idx
 
-    -- TODO: Turn a flattened index in the newShape
-    --       into a flattened index in the old shape
-    --  If this is only used to create the new V.Vector, it could return an int...     
-    flatIndexShapeConvert :: [EvalResult] -> [EvalResult] -> EvalResult -> EvalResult
-    flatIndexShapeConvert oldShape mapping idx = undefined 
+    -- TODO: Turn an index in the newShape
+    --       into an index in the old shape
+    indexShapeConvert :: EvalResult -> EvalResult -> EvalResult -> EvalResult
+    indexShapeConvert (Shap oldShape) (Idx mapping) (Idx idx) = undefined 
       where
         doConv = undefined 
     
