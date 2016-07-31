@@ -310,9 +310,20 @@ eval env e = evalState (doEval e) env
     -- TODO: Turn an index in the newShape
     --       into an index in the old shape
     indexShapeConvert :: EvalResult -> EvalResult -> EvalResult -> EvalResult
-    indexShapeConvert (Shap oldShape) (Idx mapping) (Idx idx) = undefined 
+    indexShapeConvert (Shap oldShape) (Idx mapping) (Idx idx) = Idx (doConv oldShape mapping idx)  
       where
-        doConv = undefined 
+        doConv :: [EvalResult] -> [EvalResult] -> [EvalResult] -> [EvalResult] 
+        doConv [] [] [] = []
+        doConv (s:ss) (m:ms) (i:is) =
+          case m of
+            Idx_IAll -> i: doConv ss ms is
+            Idx_IIndex ix -> Idx_IIndex ix : doConv ss ms (i:is)
+            Idx_IRange (Scalar (VInt a)) (Scalar (VInt b)) ->
+              case i of
+                Idx_IIndex (Scalar (VInt c)) ->
+                  (Idx_IIndex (Scalar (VInt (c + a)))) : doConv ss ms is
+                _ -> error "Unable to indexShapeConvert" 
+            
     
 
 -- -------------------------------------------------------
