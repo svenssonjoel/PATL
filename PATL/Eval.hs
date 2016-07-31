@@ -310,7 +310,8 @@ eval env e = evalState (doEval e) env
     -- TODO: Turn an index in the newShape
     --       into an index in the old shape
     indexShapeConvert :: EvalResult -> EvalResult -> EvalResult -> EvalResult
-    indexShapeConvert (Shap oldShape) (Idx mapping) (Idx idx) = Idx (doConv oldShape mapping idx)  
+    indexShapeConvert (Shap oldShape) (Idx mapping) (Idx idx)
+      = Idx (doConv oldShape mapping idx)  
       where
         doConv :: [EvalResult] -> [EvalResult] -> [EvalResult] -> [EvalResult] 
         doConv [] [] [] = []
