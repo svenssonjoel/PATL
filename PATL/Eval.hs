@@ -50,13 +50,22 @@ instance Eq EvalResult where
   a == b = False
   
 
-
-type Env = M.Map Identifier EvalResult --what about functions ?
+-- -------------------------------------------------------
+-- Environment
+-- -------------------------------------------------------
+type Env = M.Map Identifier EvalResult 
 
 emptyEnv = M.empty
 
+
+-- -------------------------------------------------------
+-- Evaluation monad
+-- -------------------------------------------------------
 type E a = State Env a
 
+-- -------------------------------------------------------
+-- Evaluate and expression given an environment
+-- -------------------------------------------------------
 eval :: Env -> Exp -> EvalResult
 eval env e = evalState (doEval e) env 
   where
