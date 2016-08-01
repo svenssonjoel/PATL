@@ -146,7 +146,7 @@ eval env e = evalState (doEval e) env
       Prj e idx -> do
         idx' <- doEval idx
         e' <- doEval e    
-        doPrj e' idx'
+        return $ doPrj e' idx'
               
       -- SizeOf can return either a scalar or a shape. 
       SizeOf e ->
@@ -295,7 +295,16 @@ eval env e = evalState (doEval e) env
            
 
    
-    doPrj (Array sh v) (Idx idx) = error "doPrj: not yet implemented"
+    doPrj (Array (Shap sh) v) (Idx idx) =
+      let nsh = newShape sh idx  -- error "doPrj: not yet implemented"
+          nsize = sizeExtents (Shap nsh)
+      in  Array (Shap nsh)
+                (V.generate nsize
+                            (\i ->
+                              let (Scalar (VInt i')) = (toScalarIdx (Shap sh) (indexShapeConvert (Shap sh) (Idx idx) (fromScalarIdx (Shap nsh) (Scalar (VInt i)))))
+                              in v V.! i'))
+                                                           
+                                               
 
     newShape :: [EvalResult] -> [EvalResult] -> [EvalResult]
     newShape [] [] = []
