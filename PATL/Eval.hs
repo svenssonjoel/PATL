@@ -294,7 +294,7 @@ eval env e = evalState (doEval e) env
 
            
 
-   
+    -- TODO: CLEAN UP !!!! 
     doPrj (Array (Shap sh) v) (Idx idx) =
       let nsh = newShape sh idx  -- error "doPrj: not yet implemented"
           nsize = sizeExtents (Shap nsh)
