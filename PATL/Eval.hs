@@ -294,10 +294,11 @@ eval env e = evalState (doEval e) env
 
            
 
-    -- TODO: CLEAN UP !!!! 
+    -- TODO: CLEAN UP !!!!
+    -- TODO: Problems with the zero dim case 
     doPrj (Array (Shap sh) v) (Idx idx) =
       let nsh = newShape sh idx  -- error "doPrj: not yet implemented"
-          nsize = sizeExtents (Shap nsh)
+          nsize = sizeExtents (Shap nsh) 
       in  Array (Shap nsh)
                 (V.generate nsize
                             (\i ->
