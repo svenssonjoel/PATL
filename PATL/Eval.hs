@@ -324,7 +324,7 @@ eval env e = evalState (doEval e) env
       where
         doConv :: [EvalResult] -> [EvalResult] -> [EvalResult] -> [EvalResult] 
         doConv [] [] [] = []
-        doConv (s:ss) (m:ms) (i:is) =
+        doConv old@(s:ss) mapping@(m:ms) theIndex@(i:is) =
           case m of
             Idx_IAll -> i: doConv ss ms is
             Idx_IIndex ix -> Idx_IIndex ix : doConv ss ms (i:is)
@@ -332,7 +332,9 @@ eval env e = evalState (doEval e) env
               case i of
                 Idx_IIndex (Scalar (VInt c)) ->
                   (Idx_IIndex (Scalar (VInt (c + a)))) : doConv ss ms is
-                _ -> error "Unable to indexShapeConvert" 
+                _ -> error $ "Unable to indexShapeConvert\n" ++
+                             "old: " ++ show old ++ "\n" ++ "mapping: " ++ show mapping ++ "\n" ++ "index: " ++ show theIndex
+        doConv a b c = error $ "old: " ++ show a ++ "\n" ++ "mapping: " ++ show b ++ "\n" ++ "index: " ++ show c 
             
     
 
@@ -349,7 +351,7 @@ toScalarIdx :: EvalResult -> EvalResult -> EvalResult
 toScalarIdx (Shap sh) (Idx ix) = toIdx' (reverse sh) (reverse ix)
   where
     toIdx' [] [] = Scalar (VInt 0)
-    toIdx' (Scalar (VInt s):ss) (Scalar (VInt i):is) =
+    toIdx' (Scalar (VInt s):ss) (Idx_IIndex (Scalar (VInt i)):is) =
       let (Scalar (VInt r)) = toIdx' ss is
       in  Scalar (VInt (r * s + i))
     
@@ -362,8 +364,8 @@ fromScalarIdx (Shap sh) ix = Idx (reverse $ fromIdx' (reverse sh) ix)
     --       Z  _
     -- lots of potential unmatched cases here ! 
     fromIdx' [] _  = []
-    fromIdx' [Scalar (VInt x)] (Scalar (VInt i)) = [Scalar (VInt i)]
-    fromIdx' (Scalar (VInt x):xs) (Scalar (VInt i)) =  (Scalar (VInt (i `rem` x)) :
+    fromIdx' [Scalar (VInt x)] (Scalar (VInt i)) = [Idx_IIndex (Scalar (VInt i))]
+    fromIdx' (Scalar (VInt x):xs) (Scalar (VInt i)) =  (Idx_IIndex (Scalar (VInt (i `rem` x))) :
                                           (fromIdx' xs (Scalar (VInt (i `quot` x)))))
 fromIdx _ _ = error "fromIdx: error!"
 

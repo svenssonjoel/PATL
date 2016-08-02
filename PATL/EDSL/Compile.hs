@@ -3,7 +3,7 @@
 
 module PATL.EDSL.Compile where
 
-import PATL.EDSL.Shape hiding (IIndex, IRange, Z ) 
+import PATL.EDSL.Shape hiding (IIndex, IRange, Z,IAll ) 
 
 import qualified PATL.AST as A
 import qualified PATL.Patterns as P
@@ -83,6 +83,7 @@ graphToAST gr@(Graph edges root) = evalState (doIt root) M.empty
           return $ Just ast_node
         (ShapeZ) -> return $ Just A.ShapeZ
         (IndexZ) -> return $ Just A.IndexZ
+        (IAll)   -> return $ Just A.IAll 
         -- These variables can only come from Lambdas in the EDSL!
         (Var (FunArg i)) -> do
           let ast_node = A.Var ("a" ++ show i) 
@@ -101,7 +102,25 @@ graphToAST gr@(Graph edges root) = evalState (doIt root) M.empty
                Nothing -> return Nothing
                Just body ->           
                  return $ Just (A.Lam ("a" ++ show a) body )
-          
+                 
+        (Prj  s1 s2) -> do 
+          let ss = [s1,s2]
+              uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
+              hist  = histogram (concatMap Set.elems (map snd uses_))
+          fmap Just $ doLet ss hist (\[e1,e2] ->
+                                      A.Prj e1 e2 )
+        (IIndex s1) -> do 
+          let ss = [s1]
+              uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
+              hist  = histogram (concatMap Set.elems (map snd uses_))
+          fmap Just $ doLet ss hist (\[e1] ->
+                                      A.IIndex e1 )
+        (IRange  s1 s2) -> do 
+          let ss = [s1,s2]
+              uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
+              hist  = histogram (concatMap Set.elems (map snd uses_))
+          fmap Just $ doLet ss hist (\[e1,e2] ->
+                                      A.IRange e1 e2 )            
              
         (Tuple ss) -> do
           let uses_ = map (\x -> (x, fromJust $ M.lookup x usesMap)) ss
@@ -288,6 +307,9 @@ uses start (Graph edges _) = doIt start Set.empty
                    in  Set.insert i s'
                  Lam _ e -> Set.insert i $ doIt e s
                  Iota e -> Set.insert i $ doIt e s
+                 Prj e1 e2 -> Set.insert i $ doIt e1 s `Set.union` doIt e2 s
+                 IIndex e1 -> Set.insert i $ doIt e1 s
+                 IRange e1 e2 -> Set.insert i $ doIt e1 s `Set.union` doIt e2 s                 
                  App e1 e2 -> Set.insert i $ doIt e1 s `Set.union` doIt e2 s
                  Map e1 e2 -> Set.insert i $ doIt e1 s `Set.union` doIt e2 s
                  Generate e1 e2 -> Set.insert i $ doIt e1 s `Set.union` doIt e2 s

@@ -3,11 +3,17 @@
 
 module PATL.EDSL.Shape where 
 
+import Data.Functor.Identity 
+
 -- Shapes are represented by (type level) lists
 
-data Shape a where
-  Z :: Shape '[]
-  (:.) :: a -> Shape b -> Shape (a ': b)
+data Shape_ f a where
+  Z :: Shape_ f '[]
+  (:.) :: f a -> Shape_ f b -> Shape_ f (a ': b)
+
+
+type Shape a = Shape_ Identity a 
+type Index a = Shape_ I a 
 
 infixr 5 :.
 
@@ -16,4 +22,4 @@ data I a = IIndex a
          | IAll 
 
 
-newtype Index a = Index (Shape a)
+-- newtype Index a = Index (Shape a)

@@ -16,6 +16,7 @@ import Prelude hiding (map, zipWith, div )
 import qualified Prelude as P
 
 import qualified Data.Set as Set
+import Data.Functor.Identity
 
 
 -- Type level tag to annotate Array valued expressions 
@@ -67,7 +68,7 @@ extract_row :: Exp (Array '[Exp Int,Exp Int] (Exp a))
 extract_row arr row = liftSE
                       $ Prj (toExp arr)
                             (toExp (IIndex row:.IAll:.Z
-                                    :: Shape '[I (Exp Int),I (Exp Int)]))
+                                    :: Index '[Exp Int,Exp Int]))
                                        -- Need to annotate here
                                        -- to be able to find the toExp instance
 
@@ -77,7 +78,7 @@ extract_col :: Exp (Array '[Exp Int,Exp Int] (Exp a))
 extract_col arr col = liftSE
                       $ Prj (toExp arr)
                             (toExp (IAll:.IIndex col:.Z 
-                                    :: Shape '[I (Exp Int),I (Exp Int)]))
+                                    :: Index '[Exp Int,Exp Int]))
                                        -- Need to annotate here
                                        -- to be able to find the toExp instance
                                        
@@ -87,7 +88,7 @@ extract_page :: Exp (Array '[Exp Int, Exp Int, Exp Int] (Exp a))
 extract_page arr page = liftSE
                         $ Prj (toExp arr)
                               (toExp (IIndex page:.IAll:.IAll:.Z
-                                      :: Shape '[I (Exp Int), I (Exp Int), I (Exp Int)]))
+                                      :: Index '[Exp Int,Exp Int,Exp Int]))
                      
                                        
                                        
@@ -141,12 +142,20 @@ instance Expable (Exp a -> Exp b -> Exp c) where
     
 
 --Shape is now entirely a front end thing
-instance Expable (Shape '[]) where
+instance Expable (Shape_ Identity '[]) where
   toExp Z =  Expr S.ShapeZ
 
-instance (Expable (Shape b), Expable a) => Expable (Shape (a ': b)) where
+instance (Expable (Shape_ Identity b), Expable a) => Expable (Shape_ Identity (a ': b)) where
   toExp (a:.b) = Expr $ S.ShapeCons (toExp a) (toExp b) 
-         
+
+instance Expable (Shape_ I '[]) where
+  toExp Z =  Expr S.IndexZ
+
+instance (Expable (Shape_ I b), Expable a) => Expable (Shape_ I (a ': b)) where
+  toExp (a:.b) = Expr $ S.IndexCons (toExp a) (toExp b) 
+
+instance Expable a => Expable (Identity a) where
+  toExp (Identity a) = toExp a 
 
 instance Expable a => Expable (I a) where
   toExp (IIndex i)   = Expr $ S.IIndex (toExp i)
