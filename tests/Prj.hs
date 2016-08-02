@@ -12,7 +12,7 @@ import PATL.Eval
 
 
 
--- Index into a flat array 
+-- Project a range out of a flat array 
 
 prj1 :: Exp Int
 prj1 = index (iota (emb (1000:.Z :: Shape '[Exp Int]))) 
