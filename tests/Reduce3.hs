@@ -15,13 +15,14 @@ import qualified Prelude as P
 
 import qualified Data.Map as M
 
+import Data.Functor.Identity
 -- Sum 
 
 generateData =
   let ts = 10  `powi` tInt 1 5
       bs = 100000 `div` ts
-  in generate (emb (ts:.Z :: Shape '[Exp Int]))
-              (emb $ \_ -> generate (emb (bs:.Z :: Shape '[Exp Int])) (emb (\_ -> (1 :: Exp Int))))
+  in generate (emb (Identity ts:.Z :: Shape '[Exp Int]))
+              (emb $ \_ -> generate (emb (Identity bs:.Z :: Shape '[Exp Int])) (emb (\_ -> (1 :: Exp Int))))
                                         
 -- two level nested data-parallel program 
 sumIt :: Exp Int

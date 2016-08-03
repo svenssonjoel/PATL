@@ -135,7 +135,7 @@ executable Reduce3.exe
 -- Prj
 -- ------------------------------------------------------------
 
-executable Reduce3.exe
+executable Prj.exe
   -- .hs or .lhs file containing the Main module.
   main-is:             Prj.hs
   
