@@ -26,6 +26,8 @@ data Array (sh :: [*]) a
 -- Front-end embedded language for generating PATL.AST
 -- ------------------------------------------------------------
 
+-- TODO: Generate is incorrect in terms of Shape
+--       when the generator creates arrays 
 generate :: Exp (Shape sh)
          -> Exp (Exp (Index sh) -> Exp a)
          -> Exp (Array sh (Exp a))
