@@ -12,7 +12,16 @@ import PATL.Operators
 import PATL.Patterns 
 
 import qualified Data.Map as M
-import Control.Monad.State 
+import Control.Monad.State
+
+-- -------------------------------------------------------
+-- TODOS
+-- -------------------------------------------------------
+-- * annotate AST with Types 
+--   - Currently only the Constant node has type information
+--   - Type information can be collected in the "EDSL" level.
+
+
 
 type Size = Exp 
 
