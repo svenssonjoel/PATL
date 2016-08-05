@@ -35,7 +35,6 @@
                \/  
                AST  
                 | 
-              Fusion 
                 |             (Order of these operations 
              Tune Param        may change ) 
              Extraction 
@@ -43,7 +42,9 @@
              Parameter        
 	     Validation       (Check if tuning parameters 
             (QuickCheck)       are used correctly) 
-                |  
+                |
+	      Fusion   
+                | 
                / \
               /   \ 
              /     \ 
@@ -53,6 +54,7 @@
          |           | 
        OpenCL       OpenCL 
      (or other) 
+
 
 
 ## Types
