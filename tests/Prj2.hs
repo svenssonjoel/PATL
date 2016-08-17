@@ -14,9 +14,9 @@ import Data.Functor.Identity
 -- Project a range out of a 2d array 
 
 -- TODO: This illustrates a problem with the EDSL.hs embedding 
-prj1 :: Exp (Array '[Exp Int] (Exp Int)) 
+--prj1 :: Exp (Array '[Exp Int,Exp Int] (Exp Int)) 
 prj1 = index (generate (emb (Identity 10:.Z :: Shape '[Exp Int])) 
-                       (emb $ \_ -> iota (emb (1000:.Z :: Shape '[Exp Int]))))
+                       (emb $ \_ -> iota (emb (Identity 1000:.Z :: Shape '[Exp Int]))))
              (emb (IIndex 5:.IRange 10 100 :.Z))
 
 
