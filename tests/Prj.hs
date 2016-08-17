@@ -9,13 +9,13 @@ import PATL.EDSL.Compile
 import qualified PATL.AST as AST
 import PATL.Eval
 
-
+import Data.Functor.Identity
 
 
 -- Project a range out of a flat array 
 
 prj1 :: Exp Int
-prj1 = index (iota (emb (1000:.Z :: Shape '[Exp Int]))) 
+prj1 = index (iota (emb (Identity 1000:.Z :: Shape '[Exp Int]))) 
              (emb (IRange 10 100 :.Z))
 
 

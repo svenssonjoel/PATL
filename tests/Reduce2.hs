@@ -12,12 +12,12 @@ import PATL.Eval
 import Prelude hiding (map)
 import qualified Prelude as P
 
-
+import Data.Functor.Identity
 
 -- Sum 0 to 1000 (not including 1000) 
 
-generateData = generate (emb (10:.Z :: Shape '[Exp Int]))
-                        (emb $ \_ -> iota (emb (10:.Z :: Shape '[Exp Int])))
+generateData = generate (emb (Identity 10:.Z :: Shape '[Exp Int]))
+                        (emb $ \_ -> iota (emb (Identity 10:.Z :: Shape '[Exp Int])))
                                         
 
 sumIt :: Exp Int
