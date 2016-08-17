@@ -9,14 +9,14 @@ import PATL.EDSL.Compile
 import qualified PATL.AST as AST
 import PATL.Eval
 
-
+import Data.Functor.Identity
 
 
 -- Sum 0 to 1000 (not including 1000) 
 
 sumIt :: Exp Int
-sumIt = reduce (emb (+)) 0 (iota (emb (10:.100:.Z :: Shape '[Exp Int,Exp Int])))
-          -- shape annotation currently required
+sumIt = reduce (emb (+)) 0 (iota (emb (Identity 10:. Identity 100:.Z :: Shape '[Exp Int,Exp Int])))
+          -- shape annotation currently  required
 
 doIt = do
   putStrLn "**** EDSL Syntax ****"

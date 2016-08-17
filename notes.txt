@@ -30,7 +30,7 @@
   * Sharing          /
   * Graph repr      /
   * Create Lets    /
-             \    /
+             \    Monomorphise
               \  /
                \/  
                AST  

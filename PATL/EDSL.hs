@@ -27,7 +27,15 @@ data Array (sh :: [*]) a
 -- ------------------------------------------------------------
 
 -- TODO: Generate is incorrect in terms of Shape
---       when the generator creates arrays 
+--       when the generator creates arrays
+
+
+--generate :: Shape (Exp sh) 
+--         -> Exp (Index sh -> a)
+--         -> Exp (Array sh a)
+
+-- Fun Type: Exp (a -> b -> c) 
+
 generate :: Exp (Shape sh)
          -> Exp (Exp (Index sh) -> Exp a)
          -> Exp (Array sh (Exp a))

@@ -9,10 +9,12 @@ import PATL.EDSL.Compile
 import qualified PATL.AST as AST
 import PATL.Eval
 
+import Data.Functor.Identity 
+
 import Prelude hiding (map)
 
 addIt :: Exp (Array '[Exp Int, Exp Int] (Exp Int))
-addIt = map (emb (+1000)) (iota (emb (10:.100:.Z :: Shape '[Exp Int,Exp Int])))
+addIt = map (emb (+1000)) (iota (emb (Identity 10:. Identity 100:.Z :: Shape '[Exp Int,Exp Int])))
 
 
 doIt = do
